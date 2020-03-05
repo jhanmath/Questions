@@ -2,9 +2,8 @@
 import sys
 import os
 
-# from PyQt5 import QtWidgets,QtCore, QtGui
 from PyQt5.QtWidgets import QApplication
-from mainwindow import * # 这个是main   主窗口
+from mainwindow import * # 主窗口
 
 if __name__ == '__main__':
     # Many browsers for security reason disable the loading of local files, but you can enable that capability with:
