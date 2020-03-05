@@ -1,0 +1,10 @@
+MathJax-3.0.1/
+temp/
+__pycache__/
+*.aux
+*.log
+*.pdf
+*.synctex.gz
+myquestions2.tex
+myquestions.tex
+db/database.db

@@ -1,0 +1,19 @@
+\documentclass{ctexart}
+\usepackage[margin=1in]{geometry}
+\usepackage{tasks}
+\usepackage{enumerate}
+
+\NewTasksEnvironment[
+label = ({\Alph*}) ,
+label-width = 14pt
+]{choice}[\choice]
+
+\newcommand{\emptychoice}{（\makebox[1cm]{}）}
+\newcommand{\blank}[1][2cm]{\underline{\makebox[#1]{}}}
+\newcommand{\ds}{\displaystyle}
+
+\begin{document}
+
+\input{myquestions.tex}
+
+\end{document}
