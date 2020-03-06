@@ -60,6 +60,7 @@ class AddMultipleChoice(QWidget):
         </body>
         </html>'''
         self.webView = QWebEngineView()
+        self.webView.setContextMenuPolicy(0) # 禁止右键菜单
         preview_layout.addWidget(self.webView)
         preview_box.setLayout(preview_layout)
 
@@ -228,7 +229,7 @@ class AddMultipleChoice(QWidget):
                 for j in range(4):
                     if self.pos[j] == i:
                         thisanswer = thisanswer + chr(j+65)
-                answer = answer + '第'+str(i)+'空（' + thisanswer + '）;' 
+                answer = answer + '第'+str(i)+'空：' + thisanswer + '；' 
         self.pageSourceContent = (self.input_question.toPlainText().strip().replace('\n','</br>').replace('\emptychoice','（&emsp;）') 
                                     + '</p><p>A. ' + self.input_answerA.toPlainText().strip().replace('\n','</br>')
                                     + '</p><p>B. ' + self.input_answerB.toPlainText().strip().replace('\n','</br>')

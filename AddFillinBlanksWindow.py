@@ -60,6 +60,7 @@ class AddFillinBlanks(QWidget):
         </body>
         </html>'''
         self.webView = QWebEngineView()
+        self.webView.setContextMenuPolicy(0) # 禁止右键菜单
         preview_layout.addWidget(self.webView)
         preview_box.setLayout(preview_layout)
 

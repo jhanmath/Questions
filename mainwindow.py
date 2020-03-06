@@ -22,19 +22,26 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.03.06'
+		self.ver = '2020.03.07'
 		self.selected_sectionid = [48]
 
 		mainlayout = QVBoxLayout()
-		self.qblabel = QLabel('test')
+
 		self.createDBDisplayBox()
 		mainlayout.addWidget(self.DBDisplayBox)
-		self.createAddQuestionBox()
-		mainlayout.addWidget(self.AddQuestionBox)
-		self.createSectionsBox()
-		mainlayout.addWidget(self.SectionsBox)
-		self.createExportBox()
-		mainlayout.addWidget(self.ExportBox)
+
+		self.tabs = QTabWidget()
+		self.tab_information = QWidget()
+		self.tab_modification = QWidget()
+		self.tab_export = QWidget()
+		self.tabs.addTab(self.tab_information, '题库概览')
+		self.tabs.addTab(self.tab_modification, '录入与修改题目')
+		self.tabs.addTab(self.tab_export, '导出题目')
+		self.tab_informationUI()
+		self.tab_modificationUI()
+		self.tab_exportUI()
+		mainlayout.addWidget(self.tabs)
+
 		layout_about = QHBoxLayout()
 		self.download_demo = QLabel(
 			'<a href = "http://www.jhanmath.com/?page_id=125">'
@@ -47,6 +54,7 @@ class MainWindow(QWidget):
 		self.about.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 		layout_about.addWidget(self.about)
 		mainlayout.addLayout(layout_about)
+
 		self.setLayout(mainlayout)
 
 		self.update_sections(self.selected_sectionid)
@@ -54,42 +62,166 @@ class MainWindow(QWidget):
 		self.resize(1000, 800)
 		self.setWindowTitle("数学题库")
 
+	def tab_informationUI(self):
+		layout = QVBoxLayout()
+		self.createTotalQuestionsNumBox()
+		layout.addWidget(self.TotalQuestionsNumBox)
+		self.createBrowseBox()
+		layout.addWidget(self.BrowseBox)
+		self.tab_information.setLayout(layout)		
+
+	def tab_modificationUI(self):
+		layout = QVBoxLayout()
+		self.createAddQuestionBox()
+		layout.addWidget(self.AddQuestionBox)
+		self.tab_modification.setLayout(layout)
+
+	def tab_exportUI(self):
+		layout = QVBoxLayout()
+		self.createSectionsBox()
+		layout.addWidget(self.SectionsBox)
+		self.createExportBox()
+		layout.addWidget(self.ExportBox)
+		self.tab_export.setLayout(layout)
+
 	def createDBDisplayBox(self):
-		self.DBDisplayBox = QGroupBox("当前题库中各题型题目数量")
-		layout = QGridLayout()
-		# self.lbl_dbname = QLabel('当前数据库')
+		self.DBDisplayBox = QGroupBox('当前题库')
+		layout = QHBoxLayout()
+		searchstring = 'select name from dbname'
+		self.dbname = mydb.search(searchstring)[0][0]
+		self.lbl_dbname = QLabel('当前数据库: ' + self.dbname)
 		self.btn_dbname = QPushButton('更换题库')
 		fm = QFontMetrics(self.btn_dbname.font())
-		# self.btn_dbname.setFixedWidth(fm.width(self.btn_dbname.text())+20)
-		num = '单选题'
+		self.btn_dbname.setFixedWidth(fm.width(self.btn_dbname.text())+20)
+		layout.addWidget(self.lbl_dbname)
+		layout.addWidget(self.btn_dbname)
+		self.DBDisplayBox.setLayout(layout)
+
+	def createTotalQuestionsNumBox(self):
+		self.TotalQuestionsNumBox = QGroupBox('各类型题目总数')
+		layout = QVBoxLayout()
+		self.tbl_total_questions_num = QTableWidget()
+		self.tbl_total_questions_num.setRowCount(1)
+		self.tbl_total_questions_num.setColumnCount(6)
+		self.tbl_total_questions_num.verticalHeader().setVisible(False)
+		self.tbl_total_questions_num.setHorizontalHeaderLabels(['单选题数','多选题数','判断题数','填空题数','计算题数','证明题数'])
+		self.tbl_total_questions_num.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+		self.tbl_total_questions_num.setEditTriggers(QAbstractItemView.NoEditTriggers)
+		self.tbl_total_questions_num.setSelectionMode(QAbstractItemView.NoSelection)
 		searchstring = ('select count(*) from schoice')
 		num_schoice = mydb.search(searchstring)[0][0]
-		num = num + str(num_schoice) + '道；多选题'
+		self.tbl_total_questions_num.setItem(0, 0, QTableWidgetItem(str(num_schoice)))
 		searchstring = ('select count(*) from mchoice')
 		num_mchoice = mydb.search(searchstring)[0][0]
-		num = num + str(num_mchoice) + '道；判断题'
+		self.tbl_total_questions_num.setItem(0, 1, QTableWidgetItem(str(num_mchoice)))
 		searchstring = ('select count(*) from tof')
 		num_tof = mydb.search(searchstring)[0][0]
-		num = num + str(num_tof) + '道；填空题'
+		self.tbl_total_questions_num.setItem(0, 2, QTableWidgetItem(str(num_tof)))
 		searchstring = ('select count(*) from blank')
 		num_blank = mydb.search(searchstring)[0][0]
-		num = num + str(num_blank) + '道；计算题'
+		self.tbl_total_questions_num.setItem(0, 3, QTableWidgetItem(str(num_blank)))
 		searchstring = ('select count(*) from calculation')
 		num_calculation = mydb.search(searchstring)[0][0]
-		num = num + str(num_calculation) + '道；证明题'
+		self.tbl_total_questions_num.setItem(0, 4, QTableWidgetItem(str(num_calculation)))
 		searchstring = ('select count(*) from proof')
 		num_proof = mydb.search(searchstring)[0][0]
-		num = num + str(num_proof) + '道.'
-		self.lbl_numofquestions = QLabel(num)
-		self.btn_details = QPushButton('查看详情')
-		self.btn_details.setFixedWidth(fm.width(self.btn_details.text())+20)
-		self.btn_details.setEnabled(False)
-		# layout.setSpacing(10)
-		# layout.addWidget(self.lbl_dbname, 0, 0)
-		layout.addWidget(self.lbl_numofquestions, 1, 0)
-		# layout.addWidget(self.btn_dbname, 0, 1)
-		layout.addWidget(self.btn_details, 1, 1)
-		self.DBDisplayBox.setLayout(layout)
+		self.tbl_total_questions_num.setItem(0, 5, QTableWidgetItem(str(num_proof)))
+		self.tbl_total_questions_num.setFixedHeight(80)
+		layout.addWidget(self.tbl_total_questions_num)
+		self.TotalQuestionsNumBox.setLayout(layout)
+		self.TotalQuestionsNumBox.setMaximumHeight(130)
+
+	def createBrowseBox(self):
+		self.chapters_selected_previously = []
+		self.selected_sectionsid_in_BrowseBox = []
+
+		self.BrowseBox = QGroupBox('浏览题目')
+		layout = QGridLayout()
+		self.tree_sections = QTreeWidget()
+		self.tree_sections.setColumnCount(1)
+		self.tree_sections.setMaximumWidth(500)
+		self.tree_sections.setSelectionMode(QAbstractItemView.MultiSelection)
+		self.tree_sections.setHeaderLabels(['选择章节'])
+		searchstring = 'select * from chapters'
+		self.chapters = mydb.search(searchstring)
+		searchstring = 'select * from sections'
+		self.sections = mydb.search(searchstring)
+		self.roots_in_BrowseBox = []
+		for i in range(len(self.chapters)):
+			root = QTreeWidgetItem(self.tree_sections)
+			root.setText(0, self.chapters[i][1])
+			secs_in_this_chp = []
+			j = 0
+			for j in range(len(self.sections)):
+				if self.sections[j][2] == self.chapters[i][0]:
+					secs_in_this_chp.append(self.sections[j][1])
+			for j in range(len(secs_in_this_chp)):
+				child = QTreeWidgetItem(root)
+				child.setText(0, secs_in_this_chp[j])
+			self.roots_in_BrowseBox.append(root)
+			self.tree_sections.addTopLevelItem(root)
+		self.tree_sections.clicked.connect(self.tree_sections_clicked)
+		layout.addWidget(self.tree_sections, 0, 0, 2, 1)
+
+		layout2 = QGridLayout()
+		self.chk_schoice_in_BrowseBox = QCheckBox('单选题')
+		self.chk_mchoice_in_BrowseBox = QCheckBox('多选题')
+		self.chk_tof_in_BrowseBox = QCheckBox('判断题')
+		self.chk_blank_in_BrowseBox = QCheckBox('填空题')
+		self.chk_calculation_in_BrowseBox = QCheckBox('计算题')
+		self.chk_proof_in_BrowseBox = QCheckBox('证明题')
+		self.chk_schoice_in_BrowseBox.clicked.connect(self.update_preview_in_BrowseBox)
+		self.chk_mchoice_in_BrowseBox.clicked.connect(self.update_preview_in_BrowseBox)
+		self.chk_tof_in_BrowseBox.clicked.connect(self.update_preview_in_BrowseBox)
+		self.chk_blank_in_BrowseBox.clicked.connect(self.update_preview_in_BrowseBox)
+		self.chk_calculation_in_BrowseBox.clicked.connect(self.update_preview_in_BrowseBox)
+		self.chk_proof_in_BrowseBox.clicked.connect(self.update_preview_in_BrowseBox)
+		layout2.addWidget(self.chk_schoice_in_BrowseBox, 0, 0)
+		layout2.addWidget(self.chk_mchoice_in_BrowseBox, 0, 1)
+		layout2.addWidget(self.chk_tof_in_BrowseBox, 0, 2)
+		layout2.addWidget(self.chk_blank_in_BrowseBox, 1, 0)
+		layout2.addWidget(self.chk_calculation_in_BrowseBox, 1, 1)
+		layout2.addWidget(self.chk_proof_in_BrowseBox, 1, 2)
+		layout.addLayout(layout2, 0, 1)
+
+		path = QDir.current().filePath(r'MathJax-3.0.1/es5/tex-mml-chtml.js') 
+		mathjax = QUrl.fromLocalFile(path).toString()
+		self.pageSourceHead = r'''
+		<html><head>
+		<script>
+			window.MathJax = {
+				loader: {load: ['[tex]/physics']},
+				tex: {
+					packages: {'[+]': ['physics']},
+					inlineMath: [['$','$'],['\\(','\\)']],
+				}
+			};
+			</script>
+		<script type="text/javascript" id="MathJax-script" async src="''' + mathjax + r'''"></script>
+		<style>
+			body {
+				margin: 0 auto;
+				width: 429px;
+			}
+			p {
+				font-size: 18pt;
+			}
+		</style>
+		</head>
+		<body>
+		<p>'''
+		self.pageSourceFoot = r'''</p>
+		</body>
+		</html>'''
+		self.webView_in_BrowseBox = QWebEngineView()
+		self.webView_in_BrowseBox.setMinimumSize(600, 500)
+		self.webView_in_BrowseBox.setContextMenuPolicy(0) # 禁止右键菜单
+		self.update_preview_in_BrowseBox()
+		layout.addWidget(self.webView_in_BrowseBox, 1, 1)
+		layout.setHorizontalSpacing(20)
+		layout.setRowStretch(0, 1)
+		layout.setRowStretch(1, 3)
+		self.BrowseBox.setLayout(layout)
 
 	def createAddQuestionBox(self):
 		self.AddQuestionBox = QGroupBox("添加题目")
@@ -480,3 +612,156 @@ class MainWindow(QWidget):
 		except Exception:
 			QMessageBox.about(self, u'错误', u'导出失败！')
 			return
+
+	def tree_sections_clicked(self):
+		currentItem = self.tree_sections.currentItem()
+		if currentItem in self.roots_in_BrowseBox: # 如果点击的是章
+			if (not currentItem.isSelected()) and (currentItem in self.chapters_selected_previously): # 如果上次选中，这次没选中，则设置所有子节点未选中
+				self.chapters_selected_previously.remove(currentItem)
+				for i in range(currentItem.childCount()):
+					currentItem.child(i).setSelected(False)
+			elif (currentItem.isSelected()) and (currentItem not in self.chapters_selected_previously): # 如果上次未选中，这次选中，则设置所有子节点选中
+				self.chapters_selected_previously.append(currentItem)
+				for i in range(currentItem.childCount()):
+					currentItem.child(i).setSelected(True)
+		else: # 如果点击的是节
+			if (not currentItem.isSelected()) and currentItem.parent().isSelected(): # 如果点击的节取消选中，且其父节点章被选中，则设置父节点为未选中
+				currentItem.parent().setSelected(False)
+				self.chapters_selected_previously.remove(currentItem.parent())
+		items = self.tree_sections.selectedItems()
+		self.selected_sectionsid_in_BrowseBox = []
+		for item in items:
+			if item not in self.roots_in_BrowseBox: # 不是父节点的话
+				i = 0
+				while item.text(0) != self.sections[i][1]:
+					i = i + 1
+				self.selected_sectionsid_in_BrowseBox.append(self.sections[i][0])
+			else:
+				pass
+		self.update_preview_in_BrowseBox()
+
+	# 更新预览
+	def update_preview_in_BrowseBox(self):
+		if not self.selected_sectionsid_in_BrowseBox:
+			self.webView_in_BrowseBox.setHtml(self.pageSourceHead+self.pageSourceFoot)
+			return
+		sectionstring = (' where section=' + str(self.selected_sectionsid_in_BrowseBox[0]))
+		for i in self.selected_sectionsid_in_BrowseBox:
+			sectionstring = sectionstring + ' or section=' + str(i)
+		# 读单选题表
+		searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice' + sectionstring)
+		schoice = mydb.search(searchstring)
+		num_schoice = len(schoice)
+		# 读多选题表
+		searchstring = ('select "question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source" from mchoice' + sectionstring)
+		mchoice = mydb.search(searchstring)
+		num_mchoice = len(mchoice)
+		# 读判断题表
+		searchstring = ('select "question", "correct", "explain", "section", "difficulty", "source" from tof' + sectionstring)
+		tof = mydb.search(searchstring)
+		num_tof = len(tof)
+		# 读填空题表
+		searchstring = ('select "question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source" from blank' + sectionstring)
+		blank = mydb.search(searchstring)
+		num_blank = len(blank)
+		# 读计算题表
+		searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation' + sectionstring)
+		calculation = mydb.search(searchstring)
+		num_calculation = len(calculation)
+		# 读证明题表
+		searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof' + sectionstring)
+		proof = mydb.search(searchstring)
+		num_proof = len(proof)
+
+		if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
+			self.webView_in_BrowseBox.setHtml(self.pageSourceHead+self.pageSourceFoot)
+			return
+		
+		self.pageSourceContent = ''
+		# 写入单选题
+		if self.chk_schoice_in_BrowseBox.isChecked():
+			if num_schoice>0:
+				self.pageSourceContent += ('</p><h2>单选题</h2>')
+				for i in range(num_schoice):
+					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + schoice[i][0].replace(r'\\', '</br>').replace('\emptychoice','（&emsp;）') 
+												+ '</p><p>A. ' + schoice[i][1].replace(r'\\','</br>')
+												+ '</p><p>B. ' + schoice[i][2].replace(r'\\','</br>')
+												+ '</p><p>C. ' + schoice[i][3].replace(r'\\','</br>')
+												+ '</p><p>D. ' + schoice[i][4].replace(r'\\','</br>')
+												+ '</p><p>答案: ' + schoice[i][5]
+												+ '</p><p>解析： ' + schoice[i][6].replace(r'\\','</br>'))
+
+		# 写入多选题
+		if self.chk_mchoice_in_BrowseBox.isChecked():
+			if num_mchoice>0:
+				self.pageSourceContent += ('</p><h2>多选题</h2>')
+				for i in range(num_mchoice):
+					answer = ''
+					answer_raw = mchoice[i][5:9]
+					for j in range(1, max(answer_raw)+1):
+						thisanswer = ''
+						for k in range(4):
+							if answer_raw[k] == j:
+								thisanswer = thisanswer + chr(k+65)
+						answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
+					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + mchoice[i][0].replace(r'\\','</br>').replace('\emptychoice','（&emsp;）') 
+												+ '</p><p>A. ' + mchoice[i][1].replace(r'\\','</br>')
+												+ '</p><p>B. ' + mchoice[i][2].replace(r'\\','</br>')
+												+ '</p><p>C. ' + mchoice[i][3].replace(r'\\','</br>')
+												+ '</p><p>D. ' + mchoice[i][4].replace(r'\\','</br>')
+												+ '</p><p>答案： ' + answer
+												+ '</p><p>解析： ' + mchoice[i][9].replace(r'\\','</br>'))
+
+		# 写入判断题
+		if self.chk_tof_in_BrowseBox.isChecked():
+			if num_tof>0:
+				self.pageSourceContent += ('</p><h2>判断题</h2>')
+				answertext = ['错误', '正确']
+				for i in range(num_tof):
+					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + tof[i][0].replace(r'\\','</br>')
+												+ '</p><p>答案： ' + answertext[tof[i][1]]
+												+ '</p><p>解析： ' + tof[i][2].replace(r'\\','</br>'))
+
+		# 写入填空题
+		if self.chk_blank_in_BrowseBox.isChecked():
+			if num_blank>0:
+				self.pageSourceContent += ('</p><h2>填空题</h2>')
+				for i in range(num_blank):
+					if blank[i][4] != '':
+						answer = '第1空：%s；第2空：%s；第3空：%s；第四空%s' % (blank[i][1].replace(r'\\','</br>'),blank[i][2].replace(r'\\','</br>'),blank[i][3].replace(r'\\','</br>'),blank[i][4].replace(r'\\','</br>'))
+					elif blank[i][3] != '':
+						answer = '第1空：%s；第2空：%s；第3空：%s' % (blank[i][1].replace(r'\\','</br>'),blank[i][2].replace(r'\\','</br>'),blank[i][3].replace(r'\\','</br>'))
+					elif blank[i][2] != '':
+						answer = '第1空：%s；第2空：%s' % (blank[i][1].replace(r'\\','</br>'),blank[i][2].replace(r'\\','</br>'))
+					else:
+						answer = '第1空：%s' % (blank[i][1].replace(r'\\','</br>'))
+					self.pageSourceContent += ('<p>' + str(i+1) + '.' + blank[i][0].replace(r'\\','</br>').replace(r'\blank','<span style="text-decoration:underline">&emsp;&emsp;&emsp;&emsp;</span>') 
+												+ '</p><p>答案： ' + answer
+												+ '</p><p>解析： ' + blank[i][5].replace(r'\\','</br>'))
+
+		# 写入计算题
+		if self.chk_calculation_in_BrowseBox.isChecked():
+			if num_calculation>0:
+				self.pageSourceContent += ('</p><h2>计算题</h2>')
+				for i in range(num_calculation):
+					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + calculation[i][0].replace(r'\\','</br>')
+										+ '</p><p>解： ' + calculation[i][1].replace(r'\\','</br>'))
+
+		# 写入证明题
+		if self.chk_proof_in_BrowseBox.isChecked():
+			if num_proof>0:
+				self.pageSourceContent += ('</p><h2>证明题</h2>')
+				for i in range(num_proof):
+					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + proof[i][0].replace(r'\\','</br>')
+										+ '</p><p>解： ' + proof[i][1].replace(r'\\','</br>'))
+
+		self.webView_in_BrowseBox.setHtml(self.pageSourceHead+self.pageSourceContent+self.pageSourceFoot)
+
+	def refresh_prevew_in_BrowseBox(self):
+		newwidth='width: '+ str(self.webView_in_BrowseBox.width()) +'px;'
+		self.pageSourceHead = re.sub(r'width: \d*px;', newwidth, self.pageSourceHead)
+		self.update_preview_in_BrowseBox()
+
+	# 调整窗口大小事件
+	def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
+		self.refresh_prevew_in_BrowseBox()

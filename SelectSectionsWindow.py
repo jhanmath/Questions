@@ -24,9 +24,9 @@ class SelectSections(QWidget):
         self.list_candidate = QListWidget()
         self.retrieve_list_section()
 
-        self.list_candidate.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.list_candidate.setSelectionMode(QAbstractItemView.MultiSelection)
         self.list_selected = QListWidget()
-        self.list_selected.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.list_selected.setSelectionMode(QAbstractItemView.MultiSelection)
         self.btn_add = QPushButton('->')
         self.btn_add.clicked.connect(self.add_sections)
         self.btn_delete = QPushButton('<-')

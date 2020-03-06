@@ -60,6 +60,7 @@ class AddToF(QWidget):
         </body>
         </html>'''
         self.webView = QWebEngineView()
+        self.webView.setContextMenuPolicy(0) # 禁止右键菜单
         preview_layout.addWidget(self.webView)
         preview_box.setLayout(preview_layout)
 
@@ -174,12 +175,9 @@ class AddToF(QWidget):
 
     # 更新预览
     def update_preview(self):
-        if self.answer == 0:
-            answertext = '错误'
-        else:
-            answertext = '正确'
-        self.pageSourceContent = (self.input_question.toPlainText().strip().replace('\n','</br>').replace('\emptychoice','（&emsp;）') 
-                                    + '</p><p>答案： ' + answertext
+        answertext = ['错误', '正确']
+        self.pageSourceContent = (self.input_question.toPlainText().strip().replace('\n','</br>')
+                                    + '</p><p>答案： ' + answertext[self.answer]
                                     + '</p><p>解析： ' + self.input_explain.toPlainText().strip().replace('\n','</br>'))
         self.webView.setHtml(self.pageSourceHead+self.pageSourceContent+self.pageSourceFoot)
 
