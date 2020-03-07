@@ -12,6 +12,8 @@ import re
 import database as mydb
 
 class AddToF(QWidget):
+    other_settings = pyqtSignal(list)
+
     def __init__(self, parent=None):
         super(AddToF, self).__init__(parent)
         # self.setFixedSize(900, 800)
@@ -20,7 +22,7 @@ class AddToF(QWidget):
         self.setWindowModality(Qt.ApplicationModal)
         self.answer = 0 # 设置初始答案为错误
 
-        question_box = QGroupBox('在此输入题干')
+        question_box = QGroupBox('在此输入题干(Alt + Q)')
         question_layout = QVBoxLayout()
         self.input_question = QPlainTextEdit()
         self.input_question.setMinimumHeight(140)
@@ -64,7 +66,7 @@ class AddToF(QWidget):
         preview_layout.addWidget(self.webView)
         preview_box.setLayout(preview_layout)
 
-        answers_box = QGroupBox('选择本题答案')
+        answers_box = QGroupBox('选择本题答案(Alt + A)')
         answers_layout = QGridLayout()
         self.list_answer = QComboBox()
         self.list_answer.addItems(['错误','正确'])
@@ -74,7 +76,7 @@ class AddToF(QWidget):
         answers_layout.addWidget(self.list_answer, 0, 1)
         answers_box.setLayout(answers_layout)
 
-        explain_box = QGroupBox('解析')
+        explain_box = QGroupBox('解析(Alt + E)')
         explain_layout = QVBoxLayout()
         self.input_explain = QPlainTextEdit()
         self.input_explain.setMinimumHeight(300)
@@ -125,6 +127,7 @@ class AddToF(QWidget):
         mainlayout.setRowStretch(3,1)
         self.setLayout(mainlayout)
         self.webView.setHtml(self.pageSourceHead+self.pageSourceFoot)
+        self.shortcut()
 
 
     # 改变章节数据库后重新载入章节
@@ -135,7 +138,7 @@ class AddToF(QWidget):
         if self.sections:
             for row in self.sections:
                 self.list_section.addItem(row[1])
-        self.section = self.sections[self.list_section.currentIndex()][0]
+        self.section_id = self.sections[self.list_section.currentIndex()][0]
 	
     # 改变难度数据库后重新载入难度
     def update_list_difficulty(self):
@@ -145,7 +148,7 @@ class AddToF(QWidget):
         if self.difficulties:
             for row in self.difficulties:
                 self.list_difficulty.addItem(row[1])
-        self.difficulty = self.difficulties[self.list_difficulty.currentIndex()][0]
+        self.difficulty_id = self.difficulties[self.list_difficulty.currentIndex()][0]
 
     # 改变来源数据库后重新载入来源
     def update_list_source(self):
@@ -155,19 +158,19 @@ class AddToF(QWidget):
         if self.sources:
             for row in self.sources:
                 self.list_source.addItem(row[1])
-        self.source = self.sources[self.list_source.currentIndex()][0]
+        self.source_id = self.sources[self.list_source.currentIndex()][0]
 
     # 改变章节时的事件
     def change_section(self):
-        self.section = self.sections[self.list_section.currentIndex()][0]
+        self.section_id = self.sections[self.list_section.currentIndex()][0]
 
     # 改变难度时的事件
     def change_difficulty(self):
-        self.difficulty = self.difficulties[self.list_difficulty.currentIndex()][0]
+        self.difficulty_id = self.difficulties[self.list_difficulty.currentIndex()][0]
 
     # 改变来源时的事件
     def change_source(self):
-        self.source = self.sources[self.list_source.currentIndex()][0]
+        self.source_id = self.sources[self.list_source.currentIndex()][0]
 
     def change_answer(self):
         self.answer = self.list_answer.currentIndex()
@@ -194,10 +197,11 @@ class AddToF(QWidget):
                                 + self.input_question.toPlainText().strip().replace('\n',r'\\') + '", "'
                                 + str(self.answer) + '", "'
                                 + self.input_explain.toPlainText().strip().replace('\n',r'\\') + '", '
-                                + str(self.section) + ', '
-                                + str(self.difficulty) + ', '
-                                + str(self.source) + ');')
+                                + str(self.section_id) + ', '
+                                + str(self.difficulty_id) + ', '
+                                + str(self.source_id) + ');')
             if mydb.insert(insertstring):
+                self.other_settings.emit([self.section_id, self.difficulty_id, self.source_id])
                 reply = QMessageBox.information(self, u'通知', u'添加题目成功！是否关闭当前窗口？', QMessageBox.Yes, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     self.close()
@@ -212,3 +216,35 @@ class AddToF(QWidget):
     # 调整窗口大小事件
     def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
         self.refresh_prevew()
+
+    def showEvent(self, event):
+        self.refresh_prevew()
+
+    def shortcut(self):
+        self.act_setfocus_question = QAction()
+        self.act_setfocus_question.setShortcut(QKeySequence(self.tr('Alt+Q')))
+        self.act_setfocus_question.triggered.connect(lambda: self.input_question.setFocus())
+        self.addAction(self.act_setfocus_question)
+        self.act_setfocus_answer = QAction()
+        self.act_setfocus_answer.setShortcut(QKeySequence(self.tr('Alt+A')))
+        self.act_setfocus_answer.triggered.connect(lambda: self.list_answer.setFocus())
+        self.addAction(self.act_setfocus_answer)
+        self.act_setfocus_explain = QAction()
+        self.act_setfocus_explain.setShortcut(QKeySequence(self.tr('Alt+E')))
+        self.act_setfocus_explain.triggered.connect(lambda: self.input_explain.setFocus())
+        self.addAction(self.act_setfocus_explain)
+        self.act_insert_mathenv = QAction()
+        self.act_insert_mathenv.setShortcut(QKeySequence(self.tr('Alt+M')))
+        self.act_insert_mathenv.triggered.connect(self.insert_mathenv)
+        self.addAction(self.act_insert_mathenv)
+
+    def insert_mathenv(self):
+        if self.input_question.hasFocus():
+            input_now = self.input_question
+        elif self.input_explain.hasFocus():
+            input_now = self.input_answer
+        else:
+            return
+        input_now.insertPlainText('$  $')
+        for i in range(2):
+            input_now.moveCursor(QTextCursor.PreviousCharacter)

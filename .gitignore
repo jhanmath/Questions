@@ -1,6 +1,8 @@
 MathJax-3.0.1/
 temp/
 __pycache__/
+dist/
+build/
 *.aux
 *.log
 *.pdf
@@ -8,3 +10,4 @@ __pycache__/
 myquestions2.tex
 myquestions.tex
 db/database.db
+questions.spec

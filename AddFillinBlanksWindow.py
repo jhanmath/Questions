@@ -12,6 +12,8 @@ import re
 import database as mydb
 
 class AddFillinBlanks(QWidget):
+    other_settings = pyqtSignal(list)
+    
     def __init__(self, parent=None):
         super(AddFillinBlanks, self).__init__(parent)
         # self.setFixedSize(900, 800)
@@ -20,7 +22,7 @@ class AddFillinBlanks(QWidget):
         self.setWindowModality(Qt.ApplicationModal)
         self.answers = ['', '', '', ''] # 设置ABCD选项的填写位置
 
-        question_box = QGroupBox('在此输入题干')
+        question_box = QGroupBox('在此输入题干(Alt + Q)')
         question_layout = QVBoxLayout()
         self.input_question = QPlainTextEdit(r'\blank')
         self.input_question.setMinimumHeight(140)
@@ -64,7 +66,7 @@ class AddFillinBlanks(QWidget):
         preview_layout.addWidget(self.webView)
         preview_box.setLayout(preview_layout)
 
-        options_box = QGroupBox('输入每个空的答案')
+        options_box = QGroupBox('输入答案(Alt + A/B/C/D)')
         options_layout = QGridLayout()
         self.lbl_A = QLabel('第1空')
         self.lbl_B = QLabel('第2空')
@@ -96,7 +98,7 @@ class AddFillinBlanks(QWidget):
         options_layout.addWidget(self.input_answer4, 3, 1)
         options_box.setLayout(options_layout)
 
-        explain_box = QGroupBox('解析')
+        explain_box = QGroupBox('解析(Alt + E)')
         explain_layout = QVBoxLayout()
         self.input_explain = QPlainTextEdit()
         self.input_explain.setMinimumHeight(140)
@@ -144,6 +146,7 @@ class AddFillinBlanks(QWidget):
         mainlayout.setColumnStretch(1, 1)
         self.setLayout(mainlayout)
         self.webView.setHtml(self.pageSourceHead+self.pageSourceFoot)
+        self.shortcut()
 
 
     # 改变章节数据库后重新载入章节
@@ -154,7 +157,7 @@ class AddFillinBlanks(QWidget):
         if self.sections:
             for row in self.sections:
                 self.list_section.addItem(row[1])
-        self.section = self.sections[self.list_section.currentIndex()][0]
+        self.section_id = self.sections[self.list_section.currentIndex()][0]
 	
     # 改变难度数据库后重新载入难度
     def update_list_difficulty(self):
@@ -164,7 +167,7 @@ class AddFillinBlanks(QWidget):
         if self.difficulties:
             for row in self.difficulties:
                 self.list_difficulty.addItem(row[1])
-        self.difficulty = self.difficulties[self.list_difficulty.currentIndex()][0]
+        self.difficulty_id = self.difficulties[self.list_difficulty.currentIndex()][0]
 
     # 改变来源数据库后重新载入来源
     def update_list_source(self):
@@ -174,19 +177,19 @@ class AddFillinBlanks(QWidget):
         if self.sources:
             for row in self.sources:
                 self.list_source.addItem(row[1])
-        self.source = self.sources[self.list_source.currentIndex()][0]
+        self.source_id = self.sources[self.list_source.currentIndex()][0]
 
     # 改变章节时的事件
     def change_section(self):
-        self.section = self.sections[self.list_section.currentIndex()][0]
+        self.section_id = self.sections[self.list_section.currentIndex()][0]
 
     # 改变难度时的事件
     def change_difficulty(self):
-        self.difficulty = self.difficulties[self.list_difficulty.currentIndex()][0]
+        self.difficulty_id = self.difficulties[self.list_difficulty.currentIndex()][0]
 
     # 改变来源时的事件
     def change_source(self):
-        self.source = self.sources[self.list_source.currentIndex()][0]
+        self.source_id = self.sources[self.list_source.currentIndex()][0]
 
     # 更新预览
     def update_preview(self):
@@ -194,7 +197,7 @@ class AddFillinBlanks(QWidget):
         num_blanks = self.input_question.toPlainText().count(r'\blank')
         if num_blanks:
             for i in range(1, num_blanks+1):
-                answer = answer + '第'+str(i)+'空<span style="text-decoration:underline">&emsp;' + self.answers[i-1].replace('\n','</br>') + '&emsp;</span>;' 
+                answer = answer + '第'+str(i)+'空：' + self.answers[i-1].replace('\n','</br>') + '；' 
         self.pageSourceContent = (self.input_question.toPlainText().strip().replace('\n','</br>').replace(r'\blank','<span style="text-decoration:underline">&emsp;&emsp;&emsp;&emsp;</span>') 
                                     + '</p><p>答案： ' + answer
                                     + '</p><p>解析： ' + self.input_explain.toPlainText().strip().replace('\n','</br>'))
@@ -240,21 +243,32 @@ class AddFillinBlanks(QWidget):
             table = ' "main"."blank"'
             columns = '("question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source")'
             insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
-                                + self.input_question.toPlainText().strip().replace('\n',r'\\') + '", "'
+                                + self.format_question_string(self.input_question) + '", "'
                                 + self.answers[0].replace('\n',r'\\') + '", "'
                                 + self.answers[1].replace('\n',r'\\') + '", "'
                                 + self.answers[2].replace('\n',r'\\') + '", "'
                                 + self.answers[3].replace('\n',r'\\') + '", "'
                                 + self.input_explain.toPlainText().strip().replace('\n',r'\\') + '", '
-                                + str(self.section) + ', '
-                                + str(self.difficulty) + ', '
-                                + str(self.source) + ');')
+                                + str(self.section_id) + ', '
+                                + str(self.difficulty_id) + ', '
+                                + str(self.source_id) + ');')
             if mydb.insert(insertstring):
+                self.other_settings.emit([self.section_id, self.difficulty_id, self.source_id])
                 reply = QMessageBox.information(self, u'通知', u'添加题目成功！是否关闭当前窗口？', QMessageBox.Yes, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     self.close()
             else:
                 QMessageBox.about(self, u'错误', u'添加题目失败！')
+
+    def format_question_string(self, question):
+        text = question.toPlainText().strip().replace('\n',r'\\')
+        text = text.replace(r'\blank', r'\blank ')
+        text = text.replace(r'\blank  ', r'\blank ')
+        text = text.replace(r'\blank ,', r'\blank,')
+        text = text.replace(r'\blank .', r'\blank.')
+        text = text.replace(r'\blank 。', r'\blank。')
+        text = text.replace(r'\blank ，', r'\blank，')
+        return text
 
     def refresh_prevew(self):
         newwidth='width: '+ str(self.webView.width()) +'px;'
@@ -264,3 +278,55 @@ class AddFillinBlanks(QWidget):
     # 调整窗口大小事件
     def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
         self.refresh_prevew()
+
+    def showEvent(self, event):
+        self.refresh_prevew()
+
+    def shortcut(self):
+        self.act_setfocus_question = QAction()
+        self.act_setfocus_question.setShortcut(QKeySequence(self.tr('Alt+Q')))
+        self.act_setfocus_question.triggered.connect(lambda: self.input_question.setFocus())
+        self.addAction(self.act_setfocus_question)
+        self.act_setfocus_answer1 = QAction()
+        self.act_setfocus_answer1.setShortcut(QKeySequence(self.tr('Alt+A')))
+        self.act_setfocus_answer1.triggered.connect(lambda: self.input_answer1.setFocus())
+        self.addAction(self.act_setfocus_answer1)
+        self.act_setfocus_answer2 = QAction()
+        self.act_setfocus_answer2.setShortcut(QKeySequence(self.tr('Alt+B')))
+        self.act_setfocus_answer2.triggered.connect(lambda: self.input_answer2.setFocus())
+        self.addAction(self.act_setfocus_answer2)
+        self.act_setfocus_answer3 = QAction()
+        self.act_setfocus_answer3.setShortcut(QKeySequence(self.tr('Alt+C')))
+        self.act_setfocus_answer3.triggered.connect(lambda: self.input_answer3.setFocus())
+        self.addAction(self.act_setfocus_answer3)
+        self.act_setfocus_answer4 = QAction()
+        self.act_setfocus_answer4.setShortcut(QKeySequence(self.tr('Alt+D')))
+        self.act_setfocus_answer4.triggered.connect(lambda: self.input_answer4.setFocus())
+        self.addAction(self.act_setfocus_answer4)
+        self.act_setfocus_explain = QAction()
+        self.act_setfocus_explain.setShortcut(QKeySequence(self.tr('Alt+E')))
+        self.act_setfocus_explain.triggered.connect(lambda: self.input_explain.setFocus())
+        self.addAction(self.act_setfocus_explain)
+        self.act_insert_mathenv = QAction()
+        self.act_insert_mathenv.setShortcut(QKeySequence(self.tr('Alt+M')))
+        self.act_insert_mathenv.triggered.connect(self.insert_mathenv)
+        self.addAction(self.act_insert_mathenv)
+
+    def insert_mathenv(self):
+        if self.input_question.hasFocus():
+            input_now = self.input_question
+        elif self.input_answer1.hasFocus():
+            input_now = self.input_answer1
+        elif self.input_answer2.hasFocus():
+            input_now = self.input_answer2
+        elif self.input_answer3.hasFocus():
+            input_now = self.input_answer3
+        elif self.input_answer4.hasFocus():
+            input_now = self.input_answer4
+        elif self.input_explain.hasFocus():
+            input_now = self.input_explain
+        else:
+            return
+        input_now.insertPlainText('$  $')
+        for i in range(2):
+            input_now.moveCursor(QTextCursor.PreviousCharacter)

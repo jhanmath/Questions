@@ -12,6 +12,8 @@ import re
 import database as mydb
 
 class AddSingleChoice(QWidget):
+    other_settings = pyqtSignal(list)
+    
     def __init__(self, parent=None):
         super(AddSingleChoice, self).__init__(parent)
         # self.setFixedSize(900, 800)
@@ -20,7 +22,7 @@ class AddSingleChoice(QWidget):
         self.setWindowModality(Qt.ApplicationModal)
         self.correct = ''
 
-        question_box = QGroupBox('在此输入题干')
+        question_box = QGroupBox('在此输入题干(Alt + Q)')
         question_layout = QVBoxLayout()
         self.input_question = QPlainTextEdit(r'\emptychoice')
         self.input_question.setMinimumHeight(140)
@@ -64,7 +66,7 @@ class AddSingleChoice(QWidget):
         preview_layout.addWidget(self.webView)
         preview_box.setLayout(preview_layout)
 
-        options_box = QGroupBox('输入选项并选择正确项')
+        options_box = QGroupBox('选择正确项(Alt + A/B/C/D)')
         options_layout = QGridLayout()
         self.btn_A = QRadioButton('A')
         self.btn_A.clicked.connect(self.clickA)
@@ -100,7 +102,7 @@ class AddSingleChoice(QWidget):
         options_layout.addWidget(self.input_answerD, 3, 1)
         options_box.setLayout(options_layout)
 
-        explain_box = QGroupBox('解析')
+        explain_box = QGroupBox('解析(Alt + E)')
         explain_layout = QVBoxLayout()
         self.input_explain = QPlainTextEdit()
         self.input_explain.setMinimumHeight(140)
@@ -148,7 +150,7 @@ class AddSingleChoice(QWidget):
         mainlayout.setColumnStretch(1, 1)
         self.setLayout(mainlayout)
         self.webView.setHtml(self.pageSourceHead+self.pageSourceFoot)
-        # self.initiatevalues()
+        self.shortcut()
 
 
     # 改变章节数据库后重新载入章节
@@ -159,7 +161,7 @@ class AddSingleChoice(QWidget):
         if self.sections:
             for row in self.sections:
                 self.list_section.addItem(row[1])
-        self.section = self.sections[self.list_section.currentIndex()][0]
+        self.section_id = self.sections[self.list_section.currentIndex()][0]
 	
     # 改变难度数据库后重新载入难度
     def update_list_difficulty(self):
@@ -169,7 +171,7 @@ class AddSingleChoice(QWidget):
         if self.difficulties:
             for row in self.difficulties:
                 self.list_difficulty.addItem(row[1])
-        self.difficulty = self.difficulties[self.list_difficulty.currentIndex()][0]
+        self.difficulty_id = self.difficulties[self.list_difficulty.currentIndex()][0]
 
     # 改变来源数据库后重新载入来源
     def update_list_source(self):
@@ -179,19 +181,19 @@ class AddSingleChoice(QWidget):
         if self.sources:
             for row in self.sources:
                 self.list_source.addItem(row[1])
-        self.source = self.sources[self.list_source.currentIndex()][0]
+        self.source_id = self.sources[self.list_source.currentIndex()][0]
 
     # 改变章节时的事件
     def change_section(self):
-        self.section = self.sections[self.list_section.currentIndex()][0]
+        self.section_id = self.sections[self.list_section.currentIndex()][0]
 
     # 改变难度时的事件
     def change_difficulty(self):
-        self.difficulty = self.difficulties[self.list_difficulty.currentIndex()][0]
+        self.difficulty_id = self.difficulties[self.list_difficulty.currentIndex()][0]
 
     # 改变来源时的事件
     def change_source(self):
-        self.source = self.sources[self.list_source.currentIndex()][0]
+        self.source_id = self.sources[self.list_source.currentIndex()][0]
 
     def clickA(self):
         self.correct = 'A'
@@ -247,22 +249,33 @@ class AddSingleChoice(QWidget):
             table = ' "main"."schoice"'
             columns = '("question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source")'
             insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
-                                + self.input_question.toPlainText().strip().replace('\n',r'\\') + '", "'
+                                + self.format_question_string(self.input_question) + '", "'
                                 + self.input_answerA.toPlainText().strip().replace('\n',r'\\') + '", "'
                                 + self.input_answerB.toPlainText().strip().replace('\n',r'\\') + '", "'
                                 + self.input_answerC.toPlainText().strip().replace('\n',r'\\') + '", "'
                                 + self.input_answerD.toPlainText().strip().replace('\n',r'\\') + '", "'
                                 + self.correct + '", "'
                                 + self.input_explain.toPlainText().strip().replace('\n',r'\\') + '", '
-                                + str(self.section) + ', '
-                                + str(self.difficulty) + ', '
-                                + str(self.source) + ');')
+                                + str(self.section_id) + ', '
+                                + str(self.difficulty_id) + ', '
+                                + str(self.source_id) + ');')
             if mydb.insert(insertstring):
+                self.other_settings.emit([self.section_id, self.difficulty_id, self.source_id])
                 reply = QMessageBox.information(self, u'通知', u'添加题目成功！是否关闭当前窗口？', QMessageBox.Yes, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     self.close()
             else:
                 QMessageBox.about(self, u'错误', u'添加题目失败！')
+
+    def format_question_string(self, question):
+        text = question.toPlainText().strip().replace('\n',r'\\')
+        text = text.replace(r'\emptychoice', r'\emptychoice ')
+        text = text.replace(r'\emptychoice  ', r'\emptychoice ')
+        text = text.replace(r'\emptychoice ,', r'\emptychoice,')
+        text = text.replace(r'\emptychoice .', r'\emptychoice.')
+        text = text.replace(r'\emptychoice 。', r'\emptychoice。')
+        text = text.replace(r'\emptychoice ，', r'\emptychoice，')
+        return text
 
     def refresh_prevew(self):
         newwidth='width: '+ str(self.webView.width()) +'px;'
@@ -273,3 +286,54 @@ class AddSingleChoice(QWidget):
     def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
         self.refresh_prevew()
 
+    def showEvent(self, event):
+        self.refresh_prevew()
+
+    def shortcut(self):
+        self.act_setfocus_question = QAction()
+        self.act_setfocus_question.setShortcut(QKeySequence(self.tr('Alt+Q')))
+        self.act_setfocus_question.triggered.connect(lambda: self.input_question.setFocus())
+        self.addAction(self.act_setfocus_question)
+        self.act_setfocus_answerA = QAction()
+        self.act_setfocus_answerA.setShortcut(QKeySequence(self.tr('Alt+A')))
+        self.act_setfocus_answerA.triggered.connect(lambda: self.input_answerA.setFocus())
+        self.addAction(self.act_setfocus_answerA)
+        self.act_setfocus_answerB = QAction()
+        self.act_setfocus_answerB.setShortcut(QKeySequence(self.tr('Alt+B')))
+        self.act_setfocus_answerB.triggered.connect(lambda: self.input_answerB.setFocus())
+        self.addAction(self.act_setfocus_answerB)
+        self.act_setfocus_answerC = QAction()
+        self.act_setfocus_answerC.setShortcut(QKeySequence(self.tr('Alt+C')))
+        self.act_setfocus_answerC.triggered.connect(lambda: self.input_answerC.setFocus())
+        self.addAction(self.act_setfocus_answerC)
+        self.act_setfocus_answerD = QAction()
+        self.act_setfocus_answerD.setShortcut(QKeySequence(self.tr('Alt+D')))
+        self.act_setfocus_answerD.triggered.connect(lambda: self.input_answerD.setFocus())
+        self.addAction(self.act_setfocus_answerD)
+        self.act_setfocus_explain = QAction()
+        self.act_setfocus_explain.setShortcut(QKeySequence(self.tr('Alt+E')))
+        self.act_setfocus_explain.triggered.connect(lambda: self.input_explain.setFocus())
+        self.addAction(self.act_setfocus_explain)
+        self.act_insert_mathenv = QAction()
+        self.act_insert_mathenv.setShortcut(QKeySequence(self.tr('Alt+M')))
+        self.act_insert_mathenv.triggered.connect(self.insert_mathenv)
+        self.addAction(self.act_insert_mathenv)
+
+    def insert_mathenv(self):
+        if self.input_question.hasFocus():
+            input_now = self.input_question
+        elif self.input_answerA.hasFocus():
+            input_now = self.input_answerA
+        elif self.input_answerB.hasFocus():
+            input_now = self.input_answerB
+        elif self.input_answerC.hasFocus():
+            input_now = self.input_answerC
+        elif self.input_answerD.hasFocus():
+            input_now = self.input_answerD
+        elif self.input_explain.hasFocus():
+            input_now = self.input_explain
+        else:
+            return
+        input_now.insertPlainText('$  $')
+        for i in range(2):
+            input_now.moveCursor(QTextCursor.PreviousCharacter)

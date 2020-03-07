@@ -16,6 +16,7 @@ from AddFillinBlanksWindow import *
 from AddCalculationWindow import *
 from AddProofWindow import *
 from SelectSectionsWindow import *
+import mylength as mylen
 
 class MainWindow(QWidget):
 	singal_sectionid = pyqtSignal(list)
@@ -23,8 +24,12 @@ class MainWindow(QWidget):
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
 		self.ver = '2020.03.07'
-		self.selected_sectionid = [48]
-
+		self.selected_sectionid = [48, 49, 50, 51, 52, 53]
+		self.last_added_section_id = 1
+		self.last_added_difficulty_id = 1
+		self.last_added_source_id = 1
+		self.retrieve_data()
+		
 		mainlayout = QVBoxLayout()
 
 		self.createDBDisplayBox()
@@ -33,10 +38,12 @@ class MainWindow(QWidget):
 		self.tabs = QTabWidget()
 		self.tab_information = QWidget()
 		self.tab_modification = QWidget()
-		self.tab_export = QWidget()
+		self.tab_export_by_section = QWidget()
+		self.tab_export_by_question = QWidget()
 		self.tabs.addTab(self.tab_information, '题库概览')
 		self.tabs.addTab(self.tab_modification, '录入与修改题目')
-		self.tabs.addTab(self.tab_export, '导出题目')
+		self.tabs.addTab(self.tab_export_by_section, '按章节导出')
+		self.tabs.addTab(self.tab_export_by_question, '自由选题导出')
 		self.tab_informationUI()
 		self.tab_modificationUI()
 		self.tab_exportUI()
@@ -82,7 +89,7 @@ class MainWindow(QWidget):
 		layout.addWidget(self.SectionsBox)
 		self.createExportBox()
 		layout.addWidget(self.ExportBox)
-		self.tab_export.setLayout(layout)
+		self.tab_export_by_section.setLayout(layout)
 
 	def createDBDisplayBox(self):
 		self.DBDisplayBox = QGroupBox('当前题库')
@@ -108,29 +115,46 @@ class MainWindow(QWidget):
 		self.tbl_total_questions_num.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 		self.tbl_total_questions_num.setEditTriggers(QAbstractItemView.NoEditTriggers)
 		self.tbl_total_questions_num.setSelectionMode(QAbstractItemView.NoSelection)
-		searchstring = ('select count(*) from schoice')
-		num_schoice = mydb.search(searchstring)[0][0]
-		self.tbl_total_questions_num.setItem(0, 0, QTableWidgetItem(str(num_schoice)))
-		searchstring = ('select count(*) from mchoice')
-		num_mchoice = mydb.search(searchstring)[0][0]
-		self.tbl_total_questions_num.setItem(0, 1, QTableWidgetItem(str(num_mchoice)))
-		searchstring = ('select count(*) from tof')
-		num_tof = mydb.search(searchstring)[0][0]
-		self.tbl_total_questions_num.setItem(0, 2, QTableWidgetItem(str(num_tof)))
-		searchstring = ('select count(*) from blank')
-		num_blank = mydb.search(searchstring)[0][0]
-		self.tbl_total_questions_num.setItem(0, 3, QTableWidgetItem(str(num_blank)))
-		searchstring = ('select count(*) from calculation')
-		num_calculation = mydb.search(searchstring)[0][0]
-		self.tbl_total_questions_num.setItem(0, 4, QTableWidgetItem(str(num_calculation)))
-		searchstring = ('select count(*) from proof')
-		num_proof = mydb.search(searchstring)[0][0]
-		self.tbl_total_questions_num.setItem(0, 5, QTableWidgetItem(str(num_proof)))
+		self.update_total_questions_sum()
 		self.tbl_total_questions_num.setFixedHeight(80)
+		self.tbl_total_questions_num.setStyleSheet('''QTableWidget { border: 0; }''')
+		self.tbl_total_questions_num.setGridStyle(0)
 		layout.addWidget(self.tbl_total_questions_num)
 		self.TotalQuestionsNumBox.setLayout(layout)
-		self.TotalQuestionsNumBox.setMaximumHeight(130)
+		self.TotalQuestionsNumBox.setMaximumHeight(self.tbl_total_questions_num.width()+20)
 
+	def update_total_questions_sum(self):
+		searchstring = ('select count(*) from schoice')
+		num_schoice = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_schoice))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 0, newItem)
+		searchstring = ('select count(*) from mchoice')
+		num_mchoice = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_mchoice))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 1, newItem)
+		searchstring = ('select count(*) from tof')
+		num_tof = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_tof))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 2, newItem)
+		searchstring = ('select count(*) from blank')
+		num_blank = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_blank))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 3, newItem)
+		searchstring = ('select count(*) from calculation')
+		num_calculation = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_calculation))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 4, newItem)
+		searchstring = ('select count(*) from proof')
+		num_proof = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_proof))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 5, newItem)
+		
 	def createBrowseBox(self):
 		self.chapters_selected_previously = []
 		self.selected_sectionsid_in_BrowseBox = []
@@ -142,10 +166,6 @@ class MainWindow(QWidget):
 		self.tree_sections.setMaximumWidth(500)
 		self.tree_sections.setSelectionMode(QAbstractItemView.MultiSelection)
 		self.tree_sections.setHeaderLabels(['选择章节'])
-		searchstring = 'select * from chapters'
-		self.chapters = mydb.search(searchstring)
-		searchstring = 'select * from sections'
-		self.sections = mydb.search(searchstring)
 		self.roots_in_BrowseBox = []
 		for i in range(len(self.chapters)):
 			root = QTreeWidgetItem(self.tree_sections)
@@ -170,6 +190,12 @@ class MainWindow(QWidget):
 		self.chk_blank_in_BrowseBox = QCheckBox('填空题')
 		self.chk_calculation_in_BrowseBox = QCheckBox('计算题')
 		self.chk_proof_in_BrowseBox = QCheckBox('证明题')
+		self.chk_schoice_in_BrowseBox.setChecked(True)
+		self.chk_mchoice_in_BrowseBox.setChecked(True)
+		self.chk_tof_in_BrowseBox.setChecked(True)
+		self.chk_blank_in_BrowseBox.setChecked(True)
+		self.chk_calculation_in_BrowseBox.setChecked(True)
+		self.chk_proof_in_BrowseBox.setChecked(True)
 		self.chk_schoice_in_BrowseBox.clicked.connect(self.update_preview_in_BrowseBox)
 		self.chk_mchoice_in_BrowseBox.clicked.connect(self.update_preview_in_BrowseBox)
 		self.chk_tof_in_BrowseBox.clicked.connect(self.update_preview_in_BrowseBox)
@@ -214,7 +240,7 @@ class MainWindow(QWidget):
 		</body>
 		</html>'''
 		self.webView_in_BrowseBox = QWebEngineView()
-		self.webView_in_BrowseBox.setMinimumSize(600, 500)
+		self.webView_in_BrowseBox.setMinimumSize(600, 400)
 		self.webView_in_BrowseBox.setContextMenuPolicy(0) # 禁止右键菜单
 		self.update_preview_in_BrowseBox()
 		layout.addWidget(self.webView_in_BrowseBox, 1, 1)
@@ -350,8 +376,6 @@ class MainWindow(QWidget):
 	def update_sections(self, sectionid):
 		self.selected_sectionid = sectionid
 		self.tbl_selectedsections.setRowCount(len(sectionid))
-		searchstring = 'select * from sections'
-		sections = mydb.search(searchstring)
 		total_num_schoice = 0
 		total_num_mchoice = 0
 		total_num_tof = 0
@@ -360,39 +384,45 @@ class MainWindow(QWidget):
 		total_num_proof = 0
 		for i in range(len(sectionid)):
 			j = 0
-			while sections[j][0] != sectionid[i]:
+			while self.sections[j][0] != sectionid[i]:
 				j = j + 1
-			newItem = QTableWidgetItem(sections[j][1])
+			newItem = QTableWidgetItem(self.sections[j][1])
 			self.tbl_selectedsections.setItem(i, 0, newItem)
 			searchstring = ('select count(*) from schoice where section=%d' % (sectionid[i]))
 			num_schoice = mydb.search(searchstring)[0][0]
 			total_num_schoice = total_num_schoice + num_schoice
 			newItem = QTableWidgetItem(str(num_schoice))
+			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 1, newItem)
 			searchstring = ('select count(*) from mchoice where section=%d' % (sectionid[i]))
 			num_mchoice = mydb.search(searchstring)[0][0]
 			total_num_mchoice = total_num_mchoice + num_mchoice
 			newItem = QTableWidgetItem(str(num_mchoice))
+			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 2, newItem)
 			searchstring = ('select count(*) from tof where section=%d' % (sectionid[i]))
 			num_tof = mydb.search(searchstring)[0][0]
 			total_num_tof = total_num_tof + num_tof
 			newItem = QTableWidgetItem(str(num_tof))
+			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 3, newItem)
 			searchstring = ('select count(*) from blank where section=%d' % (sectionid[i]))
 			num_blank = mydb.search(searchstring)[0][0]
 			total_num_blank = total_num_blank + num_blank
 			newItem = QTableWidgetItem(str(num_blank))
+			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 4, newItem)
 			searchstring = ('select count(*) from calculation where section=%d' % (sectionid[i]))
 			num_calculation = mydb.search(searchstring)[0][0]
 			total_num_calculation = total_num_calculation + num_calculation
 			newItem = QTableWidgetItem(str(num_calculation))
+			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 5, newItem)
 			searchstring = ('select count(*) from proof where section=%d' % (sectionid[i]))
 			num_proof = mydb.search(searchstring)[0][0]
 			total_num_proof = total_num_proof + num_proof
 			newItem = QTableWidgetItem(str(num_proof))
+			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 6, newItem)
 		self.ed_schoice.setText(str(total_num_schoice))
 		self.ed_mchoice.setText(str(total_num_mchoice))
@@ -401,30 +431,69 @@ class MainWindow(QWidget):
 		self.ed_calculate.setText(str(total_num_calculation))
 		self.ed_prove.setText(str(total_num_proof))
 
+	def transmit_settings(self, ui):
+		ui.other_settings.connect(self.update_added_settings)
+		i = 0
+		while self.last_added_section_id != self.sections[i][0]:
+			i += 1
+		ui.list_section.setCurrentIndex(i)
+		i = 0
+		while self.last_added_difficulty_id != self.difficulties[i][0]:
+			i += 1
+		ui.list_difficulty.setCurrentIndex(i)
+		i = 0
+		while self.last_added_source_id != self.sources[i][0]:
+			i += 1
+		ui.list_source.setCurrentIndex(i)
+
 	def btn_addschoice_clicked(self):
 		self.add_schoice_ui = AddSingleChoice()
+		self.transmit_settings(self.add_schoice_ui)
 		self.add_schoice_ui.show()
 
 	def btn_addmchoice_clicked(self):
 		self.add_mchoice_ui = AddMultipleChoice()
+		self.transmit_settings(self.add_mchoice_ui)
 		self.add_mchoice_ui.show()
 
 	def btn_addtof_clicked(self):
 		self.add_tof_ui = AddToF()
+		self.transmit_settings(self.add_tof_ui)
 		self.add_tof_ui.show()
 	
 	def btn_addblank_clicked(self):
 		self.add_blank_ui = AddFillinBlanks()
+		self.transmit_settings(self.add_blank_ui)
 		self.add_blank_ui.show()
 
 	def btn_addcalculate_clicked(self):
 		self.add_calculation_ui = AddCalculation()
+		self.transmit_settings(self.add_calculation_ui)
 		self.add_calculation_ui.show()
 
 	def btn_addprove_clicked(self):
 		self.add_proof_ui = AddProof()
+		self.transmit_settings(self.add_proof_ui)
 		self.add_proof_ui.show()
 
+	def update_added_settings(self, other_settings):
+		self.last_added_section_id = other_settings[0]
+		self.last_added_difficulty_id = other_settings[1]
+		self.last_added_source_id = other_settings[2]
+		self.update_total_questions_sum()
+		self.update_preview_in_BrowseBox()
+		self.update_sections(self.selected_sectionid)
+
+	def retrieve_data(self):
+		searchstring = 'select * from chapters'
+		self.chapters = mydb.search(searchstring)
+		searchstring = 'select * from sections'
+		self.sections = mydb.search(searchstring)
+		searchstring = 'select * from difficulties'
+		self.difficulties = mydb.search(searchstring)
+		searchstring = 'select * from sources'
+		self.sources = mydb.search(searchstring)
+		
 	def export_questions(self):
 		if not self.selected_sectionid:
 			QMessageBox.about(self, u'通知', u'请先选择章节！')
@@ -466,10 +535,16 @@ class MainWindow(QWidget):
 			# 写入单选题
 			if num_schoice>0:
 				f.writelines('\\section{单项选择题}\n')
-				f.writelines('\\begin{enumerate}[(1)]\n')
+				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_schoice):
 					f.writelines('\t\\item %s\n' % (schoice[i][0]))
-					f.writelines('\t\t\\begin{choice}(4)\n')
+					maxlen = max(mylen.mathlength(schoice[i][1]), mylen.mathlength(schoice[i][2]), mylen.mathlength(schoice[i][3]), mylen.mathlength(schoice[i][4]))
+					para = 4
+					if maxlen > 32:
+						para = 1
+					elif maxlen > 14:
+						para = 2
+					f.writelines('\t\t\\begin{choice}(%d)\n' % (para))
 					f.writelines('\t\t\t\\choice %s\n' % (schoice[i][1]))
 					f.writelines('\t\t\t\\choice %s\n' % (schoice[i][2]))
 					f.writelines('\t\t\t\\choice %s\n' % (schoice[i][3]))
@@ -479,9 +554,15 @@ class MainWindow(QWidget):
 			# 写入多选题
 			if num_mchoice>0:
 				f.writelines('\\section{多项选择题}\n')
-				f.writelines('\\begin{enumerate}[(1)]\n')
+				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_mchoice):
 					f.writelines('\t\\item %s\n' % (mchoice[i][0]))
+					maxlen = max(mylen.mathlength(mchoice[i][1]), mylen.mathlength(mchoice[i][2]), mylen.mathlength(mchoice[i][3]), mylen.mathlength(mchoice[i][4]))
+					para = 4
+					if maxlen > 32:
+						para = 1
+					elif maxlen > 14:
+						para = 2
 					f.writelines('\t\t\\begin{choice}(4)\n')
 					f.writelines('\t\t\t\\choice %s\n' % (mchoice[i][1]))
 					f.writelines('\t\t\t\\choice %s\n' % (mchoice[i][2]))
@@ -492,28 +573,28 @@ class MainWindow(QWidget):
 			# 写入判断题
 			if num_tof>0:
 				f.writelines('\\section{判断题}\n')
-				f.writelines('\\begin{enumerate}[(1)]\n')
+				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_tof):
 					f.writelines('\t\\item %s \\hfill\\emptychoice \n' % (tof[i][0]))
 				f.writelines('\\end{enumerate}\n')
 			# 写入填空题
 			if num_blank>0:
 				f.writelines('\\section{填空题}\n')
-				f.writelines('\\begin{enumerate}[(1)]\n')
+				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_blank):
 					f.writelines('\t\\item %s\n' % (blank[i][0]))
 				f.writelines('\\end{enumerate}\n')
 			# 写入计算题
 			if num_calculation>0:
 				f.writelines('\\section{计算题}\n')
-				f.writelines('\\begin{enumerate}[(1)]\n')
+				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_calculation):
 					f.writelines('\t\\item %s\n' % (calculation[i][0]))
 				f.writelines('\\end{enumerate}\n')
 			# 写入证明题
 			if num_proof>0:
 				f.writelines('\\section{证明题}\n')
-				f.writelines('\\begin{enumerate}[(1)]\n')
+				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_proof):
 					f.writelines('\t\\item %s\n' % (proof[i][0]))
 				f.writelines('\\end{enumerate}\n')
@@ -523,7 +604,7 @@ class MainWindow(QWidget):
 				# 单选题解答
 				if num_schoice>0:
 					f.writelines('\\section{单项选择题解答}\n')
-					f.writelines('\\begin{enumerate}[(1)]\n')
+					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_schoice):
 						if schoice[i][6] != '':
 							f.writelines('\t\\item %s\\\\\n' % (schoice[i][5]))
@@ -534,7 +615,7 @@ class MainWindow(QWidget):
 				# 多选题解答
 				if num_mchoice>0:
 					f.writelines('\\section{多项选择题解答}\n')
-					f.writelines('\\begin{enumerate}[(1)]\n')
+					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_mchoice):
 						answer = ''
 						answer_raw = mchoice[i][5:9]
@@ -553,7 +634,7 @@ class MainWindow(QWidget):
 				# 判断题解答
 				if num_tof>0:
 					f.writelines('\\section{判断题解答}\n')
-					f.writelines('\\begin{enumerate}[(1)]\n')
+					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_tof):
 						answer = ['错误', '正确']
 						if tof[i][2] != '':
@@ -565,7 +646,7 @@ class MainWindow(QWidget):
 				# 填空题解答
 				if num_blank>0:
 					f.writelines('\\section{填空题解答}\n')
-					f.writelines('\\begin{enumerate}[(1)]\n')
+					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_blank):
 						if blank[i][5] != '':
 							if blank[i][4] != '':
@@ -590,7 +671,7 @@ class MainWindow(QWidget):
 				# 计算题解答
 				if num_calculation>0:
 					f.writelines('\\section{计算题解答}\n')
-					f.writelines('\\begin{enumerate}[(1)]\n')
+					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_calculation):
 						if calculation[i][1] == '':
 							f.writelines('\t\\item 解：略\n')
@@ -600,7 +681,7 @@ class MainWindow(QWidget):
 				# 证明题解答
 				if num_proof>0:
 					f.writelines('\\section{计算题解答}\n')
-					f.writelines('\\begin{enumerate}[(1)]\n')
+					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_proof):
 						if proof[i][1] != '':
 							f.writelines('\t\\item 证明：%s\n' % (proof[i][1]))
@@ -609,7 +690,8 @@ class MainWindow(QWidget):
 					f.writelines('\\end{enumerate}\n')
 			f.close()
 			QMessageBox.about(self, u'通知', u'导出成功！')
-		except Exception:
+		except Exception as e:
+			print(e)
 			QMessageBox.about(self, u'错误', u'导出失败！')
 			return
 
@@ -758,7 +840,7 @@ class MainWindow(QWidget):
 		self.webView_in_BrowseBox.setHtml(self.pageSourceHead+self.pageSourceContent+self.pageSourceFoot)
 
 	def refresh_prevew_in_BrowseBox(self):
-		newwidth='width: '+ str(self.webView_in_BrowseBox.width()) +'px;'
+		newwidth='width: '+ str(self.webView_in_BrowseBox.width()-5) +'px;'
 		self.pageSourceHead = re.sub(r'width: \d*px;', newwidth, self.pageSourceHead)
 		self.update_preview_in_BrowseBox()
 

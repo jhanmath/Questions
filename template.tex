@@ -2,6 +2,15 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{tasks}
 \usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\ctexset{
+	section = {
+		name = {,、},
+		number = \chinese{section},
+	}
+}
 
 \NewTasksEnvironment[
 label = ({\Alph*}) ,
@@ -12,8 +21,11 @@ label-width = 14pt
 \newcommand{\blank}[1][2cm]{\underline{\makebox[#1]{}}}
 \newcommand{\ds}{\displaystyle}
 
+\title{向量代数与空间解析几何作业}
+\date{}
 \begin{document}
-
+	
+\maketitle
 \input{myquestions.tex}
 
 \end{document}

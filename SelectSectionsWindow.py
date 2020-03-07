@@ -47,8 +47,6 @@ class SelectSections(QWidget):
     def retrieve_list_section(self):
         searchstring = 'select * from sections'
         self.sections = mydb.search(searchstring)
-        # self.index_candidates = list(range(len(self.sections)))
-        # self.update_candidate()
 	
     def add_sections(self):
         items_changing = self.list_candidate.selectedItems()
