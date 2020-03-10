@@ -21,6 +21,7 @@ class AddToF(QWidget):
         self.setWindowTitle("添加判断题")
         self.setWindowModality(Qt.ApplicationModal)
         self.answer = 0 # 设置初始答案为错误
+        self.modification = 0 # 是否是修改题目，0表示不是修改题目，否则赋予待修改题目id
 
         question_box = QGroupBox('在此输入题干(Alt + Q)')
         question_layout = QVBoxLayout()
@@ -192,21 +193,38 @@ class AddToF(QWidget):
             add = True
         if add:
             table = ' "main"."tof"'
-            columns = '("question", "correct", "explain", "section", "difficulty", "source")'
-            insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
-                                + self.input_question.toPlainText().strip().replace('\n',r'\\') + '", "'
-                                + str(self.answer) + '", "'
-                                + self.input_explain.toPlainText().strip().replace('\n',r'\\') + '", '
-                                + str(self.section_id) + ', '
-                                + str(self.difficulty_id) + ', '
-                                + str(self.source_id) + ');')
-            if mydb.insert(insertstring):
-                self.other_settings.emit([self.section_id, self.difficulty_id, self.source_id])
-                reply = QMessageBox.information(self, u'通知', u'添加题目成功！是否关闭当前窗口？', QMessageBox.Yes, QMessageBox.No)
-                if reply == QMessageBox.Yes:
-                    self.close()
+            if self.modification == 0:
+                columns = '("question", "correct", "explain", "section", "difficulty", "source")'
+                insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
+                                    + self.input_question.toPlainText().strip().replace('\n','\\\\\n') + '", "'
+                                    + str(self.answer) + '", "'
+                                    + self.input_explain.toPlainText().strip().replace('\n','\\\\\n') + '", '
+                                    + str(self.section_id) + ', '
+                                    + str(self.difficulty_id) + ', '
+                                    + str(self.source_id) + ');')
+                if mydb.insert(insertstring):
+                    self.other_settings.emit([self.section_id, self.difficulty_id, self.source_id])
+                    reply = QMessageBox.information(self, u'通知', u'添加题目成功！是否关闭当前窗口？', QMessageBox.Yes, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        self.close()
+                else:
+                    QMessageBox.about(self, u'错误', u'添加题目失败！')
             else:
-                QMessageBox.about(self, u'错误', u'添加题目失败！')
+                updatestring = ('UPDATE ' + table + ' SET question="%s", correct=%d, explain="%s", section=%d, difficulty=%d, source=%d where id=%d;'
+                                % (self.input_question.toPlainText().strip().replace('\n','\\\\\n'),
+                                    self.answer,
+                                    self.input_explain.toPlainText().strip().replace('\n','\\\\\n'),
+                                    self.section_id,
+                                    self.difficulty_id,
+                                    self.source_id,
+                                    self.modification))
+                if mydb.insert(updatestring):
+                    self.other_settings.emit([self.section_id, self.difficulty_id, self.source_id])
+                    reply = QMessageBox.information(self, u'通知', u'修改题目成功！是否关闭当前窗口？', QMessageBox.Yes, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        self.close()
+                else:
+                    QMessageBox.about(self, u'错误', u'修改题目失败！')
 
     def refresh_prevew(self):
         newwidth='width: '+ str(self.webView.width()) +'px;'
