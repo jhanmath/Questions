@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from PyQt5.QtCore import QDir
 import regex
 
 def mathlength(string):
@@ -71,3 +72,38 @@ def format_question_to_html(question, question_type, number=''): # 问题数据�
         questionstring = ('<p>' + format_number + question[0].replace(r'\\','</br>')
                                     + '</p><p>解： ' + question[1].replace(r'\\','</br>'))
     return questionstring
+
+
+# path = QDir.current().filePath(r'MathJax-3.0.1/es5/tex-mml-chtml.js') 
+# mathjax = QUrl.fromLocalFile(path).toString()
+def gethtml(width, contents=''):
+    mathjax = QDir.currentPath() + r'/MathJax-3.0.1/es5/tex-mml-chtml.js'
+    pageSourceHead1 = r'''
+    <html><head>
+    <script>
+        window.MathJax = {
+            loader: {load: ['[tex]/physics']},
+            tex: {
+                packages: {'[+]': ['physics']},
+                inlineMath: [['$','$'],['\\(','\\)']],
+            }
+        };
+        </script>
+    <script type="text/javascript" id="MathJax-script" async src="''' + mathjax + r'''"></script>
+    <style>
+        body {
+            margin: 0 auto;
+            width: '''
+    pageSourceHead2 = r'''px;
+        }
+        p {
+            font-size: 18pt;
+        }
+    </style>
+    </head>
+    <body>
+    <p>'''
+    pageSourceFoot = r'''</p>
+    </body>
+    </html>'''
+    return pageSourceHead1 + str(width-5) + pageSourceHead2 + contents + pageSourceFoot

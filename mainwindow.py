@@ -23,7 +23,7 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.03.10'
+		self.ver = '2020.03.11'
 		self.selected_sectionids_in_ExportBox = [48, 49, 50, 51, 52, 53]
 		self.last_added_section_id = 1
 		self.last_added_difficulty_id = 1
@@ -75,6 +75,8 @@ class MainWindow(QWidget):
 		layout.addWidget(self.TotalQuestionsNumBox)
 		self.createBrowseBox()
 		layout.addWidget(self.BrowseBox)
+		layout.setStretchFactor(self.TotalQuestionsNumBox, 1)
+		layout.setStretchFactor(self.BrowseBox, 100)
 		self.tab_information.setLayout(layout)		
 
 	def tab_modificationUI(self):
@@ -124,38 +126,6 @@ class MainWindow(QWidget):
 		layout.addWidget(self.tbl_total_questions_num)
 		self.TotalQuestionsNumBox.setLayout(layout)
 		self.TotalQuestionsNumBox.setMaximumHeight(self.tbl_total_questions_num.width()+20)
-
-	def update_total_questions_sum(self): # 更新当前各类问题总数
-		searchstring = ('select count(*) from schoice')
-		num_schoice = mydb.search(searchstring)[0][0]
-		newItem = QTableWidgetItem(str(num_schoice))
-		newItem.setTextAlignment(Qt.AlignHCenter)
-		self.tbl_total_questions_num.setItem(0, 0, newItem)
-		searchstring = ('select count(*) from mchoice')
-		num_mchoice = mydb.search(searchstring)[0][0]
-		newItem = QTableWidgetItem(str(num_mchoice))
-		newItem.setTextAlignment(Qt.AlignHCenter)
-		self.tbl_total_questions_num.setItem(0, 1, newItem)
-		searchstring = ('select count(*) from tof')
-		num_tof = mydb.search(searchstring)[0][0]
-		newItem = QTableWidgetItem(str(num_tof))
-		newItem.setTextAlignment(Qt.AlignHCenter)
-		self.tbl_total_questions_num.setItem(0, 2, newItem)
-		searchstring = ('select count(*) from blank')
-		num_blank = mydb.search(searchstring)[0][0]
-		newItem = QTableWidgetItem(str(num_blank))
-		newItem.setTextAlignment(Qt.AlignHCenter)
-		self.tbl_total_questions_num.setItem(0, 3, newItem)
-		searchstring = ('select count(*) from calculation')
-		num_calculation = mydb.search(searchstring)[0][0]
-		newItem = QTableWidgetItem(str(num_calculation))
-		newItem.setTextAlignment(Qt.AlignHCenter)
-		self.tbl_total_questions_num.setItem(0, 4, newItem)
-		searchstring = ('select count(*) from proof')
-		num_proof = mydb.search(searchstring)[0][0]
-		newItem = QTableWidgetItem(str(num_proof))
-		newItem.setTextAlignment(Qt.AlignHCenter)
-		self.tbl_total_questions_num.setItem(0, 5, newItem)
 		
 	def createBrowseBox(self):
 		self.chapters_selected_previously = []
@@ -212,35 +182,6 @@ class MainWindow(QWidget):
 		layout2.addWidget(self.chk_proof_in_BrowseBox, 1, 2)
 		layout.addLayout(layout2, 0, 1)
 
-		path = QDir.current().filePath(r'MathJax-3.0.1/es5/tex-mml-chtml.js') 
-		mathjax = QUrl.fromLocalFile(path).toString()
-		self.pageSourceHead = r'''
-		<html><head>
-		<script>
-			window.MathJax = {
-				loader: {load: ['[tex]/physics']},
-				tex: {
-					packages: {'[+]': ['physics']},
-					inlineMath: [['$','$'],['\\(','\\)']],
-				}
-			};
-			</script>
-		<script type="text/javascript" id="MathJax-script" async src="''' + mathjax + r'''"></script>
-		<style>
-			body {
-				margin: 0 auto;
-				width: 429px;
-			}
-			p {
-				font-size: 18pt;
-			}
-		</style>
-		</head>
-		<body>
-		<p>'''
-		self.pageSourceFoot = r'''</p>
-		</body>
-		</html>'''
 		self.webView_in_BrowseBox = QWebEngineView()
 		self.webView_in_BrowseBox.setMinimumSize(600, 400)
 		self.webView_in_BrowseBox.setContextMenuPolicy(0) # 禁止右键菜单
@@ -313,40 +254,49 @@ class MainWindow(QWidget):
 		self.lbl_sequence_in_ModifyBox.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 		layout2.addWidget(self.list_type_of_question_in_ModifyBox)
 		layout2.addWidget(self.lbl_sequence_in_ModifyBox)
-		layout.addLayout(layout2, 0, 1)
+		layout.addLayout(layout2, 0, 1, 1, 3)
 
-		path = QDir.current().filePath(r'MathJax-3.0.1/es5/tex-mml-chtml.js') 
-		mathjax = QUrl.fromLocalFile(path).toString()
 		self.webView_in_ModifyBox = QWebEngineView()
 		self.webView_in_ModifyBox.setMinimumSize(600, 400)
 		self.webView_in_ModifyBox.setContextMenuPolicy(0) # 禁止右键菜单
-		layout.addWidget(self.webView_in_ModifyBox, 1, 1)
+		layout.addWidget(self.webView_in_ModifyBox, 1, 1, 1, 3)
 
 		layout_navi_btn = QHBoxLayout()
 		self.btn_previous = QPushButton('上一题(&Z)')
 		self.btn_next = QPushButton('下一题(&X)')
-		self.btn_modify = QPushButton('修改这道题')
-		self.btn_delete = QPushButton('删除这道题')
+		self.btn_modify = QPushButton('修改(&M)')
+		self.btn_copy = QPushButton('复制(&C)')
+		self.btn_delete = QPushButton('删除(&D)')
+		fm = QFontMetrics(self.btn_modify.font())
+		margin = 4
+		self.btn_previous.setFixedWidth(fm.width(self.btn_previous.text()) + margin)
+		self.btn_next.setFixedWidth(fm.width(self.btn_next.text()) + margin)
+		self.btn_modify.setFixedWidth(fm.width(self.btn_modify.text()) + margin)
+		self.btn_copy.setFixedWidth(fm.width(self.btn_copy.text()) + margin)
+		self.btn_delete.setFixedWidth(fm.width(self.btn_delete.text()) + margin)
 		self.btn_previous.setEnabled(False)
 		self.btn_modify.setEnabled(False)
 		self.btn_next.setEnabled(False)
 		self.btn_delete.setEnabled(False)
+		self.btn_copy.setEnabled(False)
 		self.btn_previous.clicked.connect(self.btn_previous_clicked)
 		self.btn_next.clicked.connect(self.btn_next_clicked)
 		self.btn_modify.clicked.connect(self.btn_modify_clicked)
 		self.btn_delete.clicked.connect(self.btn_delete_clicked)
+		self.btn_copy.clicked.connect(self.btn_copy_clicked)
 		layout_navi_btn.addWidget(self.btn_previous)
 		layout_navi_btn.addWidget(self.btn_modify)
+		layout_navi_btn.addWidget(self.btn_copy)
 		layout_navi_btn.addWidget(self.btn_delete)
 		layout_navi_btn.addWidget(self.btn_next)
 
 		self.update_preview_in_ModifyBox()
 		self.tree_sections_in_ModifyBox.clicked.connect(self.tree_sections_in_ModifyBox_clicked)
 		
-		layout.addLayout(layout_navi_btn,2,1)
+		layout.addLayout(layout_navi_btn,2,2)
 		layout.setHorizontalSpacing(20)
 		layout.setRowStretch(0, 1)
-		layout.setRowStretch(1, 3)
+		layout.setRowStretch(1, 100)
 		self.ModifyQuestionBox.setLayout(layout)		
 
 	def createSectionsBox(self):
@@ -401,7 +351,7 @@ class MainWindow(QWidget):
 		self.chk_random = QCheckBox('打乱题目顺序')
 		self.chk_randomchoice = QCheckBox('选择题选项乱序')
 		self.chk_white = QCheckBox('主观题后留空')
-		self.chk_follow = QCheckBox('解答紧跟题')
+		self.chk_follow = QCheckBox('解答跟随小题')
 		self.chk_distribute = QCheckBox('平均分配各节题目数量')
 		self.chk_easy = QCheckBox('简单')
 		self.chk_medium = QCheckBox('中等')
@@ -450,6 +400,478 @@ class MainWindow(QWidget):
 		self.singal_sectionid.connect(self.select_sections_ui.initialize)
 		self.singal_sectionid.emit(self.selected_sectionids_in_ExportBox)
 		self.select_sections_ui.show()
+
+	def btn_addschoice_clicked(self):
+		self.add_schoice_ui = AddSingleChoice()
+		self.transmit_settings(self.add_schoice_ui)
+		self.add_schoice_ui.show()
+
+	def btn_addmchoice_clicked(self):
+		self.add_mchoice_ui = AddMultipleChoice()
+		self.transmit_settings(self.add_mchoice_ui)
+		self.add_mchoice_ui.show()
+
+	def btn_addtof_clicked(self):
+		self.add_tof_ui = AddToF()
+		self.transmit_settings(self.add_tof_ui)
+		self.add_tof_ui.show()
+	
+	def btn_addblank_clicked(self):
+		self.add_blank_ui = AddFillinBlanks()
+		self.transmit_settings(self.add_blank_ui)
+		self.add_blank_ui.show()
+
+	def btn_addcalculate_clicked(self):
+		self.add_calculation_ui = AddCalculation()
+		self.transmit_settings(self.add_calculation_ui)
+		self.add_calculation_ui.show()
+
+	def btn_addprove_clicked(self):
+		self.add_proof_ui = AddProof()
+		self.transmit_settings(self.add_proof_ui)
+		self.add_proof_ui.show()
+
+	def btn_previous_clicked(self):
+		index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
+		if index != 0:
+			self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index-1]
+		self.update_preview_in_ModifyBox()
+
+	def btn_next_clicked(self):
+		index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
+		if index != len(self.questionids_in_ModifyBox)-1:
+			self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index+1]
+		self.update_preview_in_ModifyBox()
+	
+	def btn_modify_clicked(self):
+		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
+			self.add_schoice_ui = AddSingleChoice()
+			self.add_schoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			if self.question_data_in_ModifyBox[5] == 'A':
+				self.add_schoice_ui.btn_A.setChecked(Ture)
+				self.add_schoice_ui.clickA()
+			elif self.question_data_in_ModifyBox[5] == 'B':
+				self.add_schoice_ui.btn_B.setChecked(True)
+				self.add_schoice_ui.clickB()
+			elif self.question_data_in_ModifyBox[5] == 'C':
+				self.add_schoice_ui.btn_C.setChecked(True)
+				self.add_schoice_ui.clickC()
+			elif self.question_data_in_ModifyBox[5] == 'D':
+				self.add_schoice_ui.btn_D.setChecked(True)
+				self.add_schoice_ui.clickD()
+			self.add_schoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[6].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[7] != self.sections[i][0]:
+				i += 1
+			self.add_schoice_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[8] != self.difficulties[i][0]:
+				i += 1
+			self.add_schoice_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[9] != self.sources[i][0]:
+				i += 1
+			self.add_schoice_ui.list_source.setCurrentIndex(i)
+			self.add_schoice_ui.other_settings.connect(self.update_after_modification)
+			self.add_schoice_ui.modification = self.questionid_in_ModifyBox
+			self.add_schoice_ui.btn_add.setText('修改题目')
+			# self.add_schoice_ui.update_preview()
+			self.add_schoice_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
+			self.add_mchoice_ui = AddMultipleChoice()
+			self.add_mchoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.btn_A.setCurrentIndex(self.question_data_in_ModifyBox[5])
+			self.add_mchoice_ui.btn_B.setCurrentIndex(self.question_data_in_ModifyBox[6])
+			self.add_mchoice_ui.btn_C.setCurrentIndex(self.question_data_in_ModifyBox[7])
+			self.add_mchoice_ui.btn_D.setCurrentIndex(self.question_data_in_ModifyBox[8])
+			self.add_mchoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[9].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[10] != self.sections[i][0]:
+				i += 1
+			self.add_mchoice_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[11] != self.difficulties[i][0]:
+				i += 1
+			self.add_mchoice_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[12] != self.sources[i][0]:
+				i += 1
+			self.add_mchoice_ui.list_source.setCurrentIndex(i)
+			self.add_mchoice_ui.other_settings.connect(self.update_after_modification)
+			self.add_mchoice_ui.modification = self.questionid_in_ModifyBox
+			self.add_mchoice_ui.btn_add.setText('修改题目')
+			# self.add_mchoice_ui.update_preview()
+			self.add_mchoice_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
+			self.add_tof_ui = AddToF()
+			self.add_tof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_tof_ui.list_answer.setCurrentIndex(self.question_data_in_ModifyBox[1])
+			self.add_tof_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[3] != self.sections[i][0]:
+				i += 1
+			self.add_tof_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[4] != self.difficulties[i][0]:
+				i += 1
+			self.add_tof_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[5] != self.sources[i][0]:
+				i += 1
+			self.add_tof_ui.list_source.setCurrentIndex(i)
+			self.add_tof_ui.other_settings.connect(self.update_after_modification)
+			self.add_tof_ui.modification = self.questionid_in_ModifyBox
+			self.add_tof_ui.btn_add.setText('修改题目')
+			# self.add_tof_ui.update_preview()
+			self.add_tof_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
+			self.add_blank_ui = AddFillinBlanks()
+			self.add_blank_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer1.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer2.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer3.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer4.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[5].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[6] != self.sections[i][0]:
+				i += 1
+			self.add_blank_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[7] != self.difficulties[i][0]:
+				i += 1
+			self.add_blank_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[8] != self.sources[i][0]:
+				i += 1
+			self.add_blank_ui.list_source.setCurrentIndex(i)
+			self.add_blank_ui.other_settings.connect(self.update_after_modification)
+			self.add_blank_ui.modification = self.questionid_in_ModifyBox
+			self.add_blank_ui.btn_add.setText('修改题目')
+			# self.add_blank_ui.update_preview()
+			self.add_blank_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
+			self.add_calculation_ui = AddCalculation()
+			self.add_calculation_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_calculation_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[2] != self.sections[i][0]:
+				i += 1
+			self.add_calculation_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[3] != self.difficulties[i][0]:
+				i += 1
+			self.add_calculation_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[4] != self.sources[i][0]:
+				i += 1
+			self.add_calculation_ui.list_source.setCurrentIndex(i)
+			self.add_calculation_ui.other_settings.connect(self.update_after_modification)
+			self.add_calculation_ui.modification = self.questionid_in_ModifyBox
+			self.add_calculation_ui.btn_add.setText('修改题目')
+			# self.add_calculation_ui.update_preview()
+			self.add_calculation_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
+			self.add_proof_ui = AddProof()
+			self.add_proof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_proof_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[2] != self.sections[i][0]:
+				i += 1
+			self.add_proof_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[3] != self.difficulties[i][0]:
+				i += 1
+			self.add_proof_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[4] != self.sources[i][0]:
+				i += 1
+			self.add_proof_ui.list_source.setCurrentIndex(i)
+			self.add_proof_ui.other_settings.connect(self.update_after_modification)
+			self.add_proof_ui.modification = self.questionid_in_ModifyBox
+			self.add_proof_ui.btn_add.setText('修改题目')
+			# self.add_proof_ui.update_preview()
+			self.add_proof_ui.show()
+
+	def btn_delete_clicked(self):
+		reply = QMessageBox.question(self, u'询问', u'确认删除当前题目？', QMessageBox.Yes, QMessageBox.No)
+		if reply == QMessageBox.Yes:
+			if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
+				deletestring = ('delete from schoice where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
+				deletestring = ('delete from mchoice where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
+				deletestring = ('delete from tof where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
+				deletestring = ('delete from blank where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
+				deletestring = ('delete from calculation where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
+				deletestring = ('delete from proof where id = %d' % (self.questionid_in_ModifyBox))
+			if mydb.insert(deletestring):
+				QMessageBox.about(self, '通知', '删除成功！')
+				index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
+				self.questionids_in_ModifyBox.remove(self.questionid_in_ModifyBox)
+				if len(self.questionids_in_ModifyBox) == 0:
+					self.questionid_in_ModifyBox = 0 # 如果删除后当前题目列表为空，则问题id清0
+				elif index == len(self.questionids_in_ModifyBox):
+					self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index - 1]
+				else:
+					self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index]
+				self.update_preview_in_ModifyBox()
+				self.update_preview_in_BrowseBox()
+				self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
+			else:
+				QMessageBox.about(self, '通知', '删除失败！')
+
+	def btn_copy_clicked(self):
+		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
+			self.add_schoice_ui = AddSingleChoice()
+			self.add_schoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			if self.question_data_in_ModifyBox[5] == 'A':
+				self.add_schoice_ui.btn_A.setChecked(Ture)
+				self.add_schoice_ui.clickA()
+			elif self.question_data_in_ModifyBox[5] == 'B':
+				self.add_schoice_ui.btn_B.setChecked(True)
+				self.add_schoice_ui.clickB()
+			elif self.question_data_in_ModifyBox[5] == 'C':
+				self.add_schoice_ui.btn_C.setChecked(True)
+				self.add_schoice_ui.clickC()
+			elif self.question_data_in_ModifyBox[5] == 'D':
+				self.add_schoice_ui.btn_D.setChecked(True)
+				self.add_schoice_ui.clickD()
+			self.add_schoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[6].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[7] != self.sections[i][0]:
+				i += 1
+			self.add_schoice_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[8] != self.difficulties[i][0]:
+				i += 1
+			self.add_schoice_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[9] != self.sources[i][0]:
+				i += 1
+			self.add_schoice_ui.list_source.setCurrentIndex(i)
+			self.add_schoice_ui.other_settings.connect(self.update_after_insertion)
+			# self.add_schoice_ui.update_preview()
+			self.add_schoice_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
+			self.add_mchoice_ui = AddMultipleChoice()
+			self.add_mchoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.btn_A.setCurrentIndex(self.question_data_in_ModifyBox[5])
+			self.add_mchoice_ui.btn_B.setCurrentIndex(self.question_data_in_ModifyBox[6])
+			self.add_mchoice_ui.btn_C.setCurrentIndex(self.question_data_in_ModifyBox[7])
+			self.add_mchoice_ui.btn_D.setCurrentIndex(self.question_data_in_ModifyBox[8])
+			self.add_mchoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[9].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[10] != self.sections[i][0]:
+				i += 1
+			self.add_mchoice_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[11] != self.difficulties[i][0]:
+				i += 1
+			self.add_mchoice_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[12] != self.sources[i][0]:
+				i += 1
+			self.add_mchoice_ui.list_source.setCurrentIndex(i)
+			self.add_schoice_ui.other_settings.connect(self.update_after_insertion)
+			# self.add_mchoice_ui.update_preview()
+			self.add_mchoice_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
+			self.add_tof_ui = AddToF()
+			self.add_tof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_tof_ui.list_answer.setCurrentIndex(self.question_data_in_ModifyBox[1])
+			self.add_tof_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[3] != self.sections[i][0]:
+				i += 1
+			self.add_tof_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[4] != self.difficulties[i][0]:
+				i += 1
+			self.add_tof_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[5] != self.sources[i][0]:
+				i += 1
+			self.add_tof_ui.list_source.setCurrentIndex(i)
+			self.add_schoice_ui.other_settings.connect(self.update_after_insertion)
+			# self.add_tof_ui.update_preview()
+			self.add_tof_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
+			self.add_blank_ui = AddFillinBlanks()
+			self.add_blank_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer1.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer2.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer3.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer4.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[5].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[6] != self.sections[i][0]:
+				i += 1
+			self.add_blank_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[7] != self.difficulties[i][0]:
+				i += 1
+			self.add_blank_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[8] != self.sources[i][0]:
+				i += 1
+			self.add_blank_ui.list_source.setCurrentIndex(i)
+			self.add_schoice_ui.other_settings.connect(self.update_after_insertion)
+			# self.add_blank_ui.update_preview()
+			self.add_blank_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
+			self.add_calculation_ui = AddCalculation()
+			self.add_calculation_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_calculation_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[2] != self.sections[i][0]:
+				i += 1
+			self.add_calculation_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[3] != self.difficulties[i][0]:
+				i += 1
+			self.add_calculation_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[4] != self.sources[i][0]:
+				i += 1
+			self.add_calculation_ui.list_source.setCurrentIndex(i)
+			self.add_schoice_ui.other_settings.connect(self.update_after_insertion)
+			# self.add_calculation_ui.update_preview()
+			self.add_calculation_ui.show()
+		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
+			self.add_proof_ui = AddProof()
+			self.add_proof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_proof_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			i = 0
+			while self.question_data_in_ModifyBox[2] != self.sections[i][0]:
+				i += 1
+			self.add_proof_ui.list_section.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[3] != self.difficulties[i][0]:
+				i += 1
+			self.add_proof_ui.list_difficulty.setCurrentIndex(i)
+			i = 0
+			while self.question_data_in_ModifyBox[4] != self.sources[i][0]:
+				i += 1
+			self.add_proof_ui.list_source.setCurrentIndex(i)
+			self.add_schoice_ui.other_settings.connect(self.update_after_insertion)
+			# self.add_proof_ui.update_preview()
+			self.add_proof_ui.show()
+
+	def tree_sections_clicked(self):
+		currentItem = self.tree_sections.currentItem()
+		print(currentItem.parent()==None)
+		if currentItem in self.roots_in_BrowseBox: # 如果点击的是章
+			if (not currentItem.isSelected()) and (currentItem in self.chapters_selected_previously): # 如果上次选中，这次没选中，则设置所有子节点未选中
+				self.chapters_selected_previously.remove(currentItem)
+				for i in range(currentItem.childCount()):
+					currentItem.child(i).setSelected(False)
+			elif (currentItem.isSelected()) and (currentItem not in self.chapters_selected_previously): # 如果上次未选中，这次选中，则设置所有子节点选中
+				self.chapters_selected_previously.append(currentItem)
+				for i in range(currentItem.childCount()):
+					currentItem.child(i).setSelected(True)
+		else: # 如果点击的是节
+			if (not currentItem.isSelected()) and currentItem.parent().isSelected(): # 如果点击的节取消选中，且其父节点章被选中，则设置父节点为未选中
+				currentItem.parent().setSelected(False)
+				self.chapters_selected_previously.remove(currentItem.parent())
+		items = self.tree_sections.selectedItems()
+		self.selected_sectionsid_in_BrowseBox = []
+		for item in items:
+			if item not in self.roots_in_BrowseBox: # 不是父节点的话
+				i = 0
+				while item.text(0) != self.sections[i][1]:
+					i = i + 1
+				self.selected_sectionsid_in_BrowseBox.append(self.sections[i][0])
+			else:
+				pass
+		self.update_preview_in_BrowseBox()
+
+	def tree_sections_in_ModifyBox_clicked(self):
+		currentItem = self.tree_sections_in_ModifyBox.currentItem()
+		if currentItem.isSelected():
+			if currentItem not in self.roots_in_ModifyBox:
+				i = 0
+				while currentItem.text(0) != self.sections[i][1]:
+					i += 1
+				self.sectionid_selected_in_ModifyBox = self.sections[i][0]
+			else:
+				self.sectionid_selected_in_ModifyBox = 0
+		else:
+			self.sectionid_selected_in_ModifyBox = 0
+		self.retrieve_questionids_in_ModifyBox()
+
+	def update_total_questions_sum(self): # 更新当前各类问题总数
+		searchstring = ('select count(*) from schoice')
+		num_schoice = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_schoice))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 0, newItem)
+		searchstring = ('select count(*) from mchoice')
+		num_mchoice = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_mchoice))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 1, newItem)
+		searchstring = ('select count(*) from tof')
+		num_tof = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_tof))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 2, newItem)
+		searchstring = ('select count(*) from blank')
+		num_blank = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_blank))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 3, newItem)
+		searchstring = ('select count(*) from calculation')
+		num_calculation = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_calculation))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 4, newItem)
+		searchstring = ('select count(*) from proof')
+		num_proof = mydb.search(searchstring)[0][0]
+		newItem = QTableWidgetItem(str(num_proof))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_total_questions_num.setItem(0, 5, newItem)
+
+	def update_after_insertion(self, other_settings): # 添加题目后主界面更新
+		self.last_added_section_id = other_settings[0]
+		self.last_added_difficulty_id = other_settings[1]
+		self.last_added_source_id = other_settings[2]
+		self.update_total_questions_sum()
+		self.update_preview_in_BrowseBox()
+		self.retrieve_questionids_in_ModifyBox()
+		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
+
+	def update_after_modification(self, other_settings): # 修改题目后主界面更新
+		if self.sectionid_selected_in_ModifyBox != other_settings[0]:
+			index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
+			self.questionids_in_ModifyBox.remove(self.questionid_in_ModifyBox)
+			if len(self.questionids_in_ModifyBox) == 0:
+				self.questionid_in_ModifyBox = 0
+			elif index == len(self.questionids_in_ModifyBox):
+				self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index - 1]
+			else:
+				self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index]
+		self.update_preview_in_BrowseBox()
+		self.update_preview_in_ModifyBox()
+		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
 
 	def update_sections_in_ExportBox(self, sectionids):
 		self.selected_sectionids_in_ExportBox = sectionids
@@ -509,8 +931,183 @@ class MainWindow(QWidget):
 		self.ed_calculate.setText(str(total_num_calculation))
 		self.ed_prove.setText(str(total_num_proof))
 
+	def update_preview_in_ModifyBox(self):
+		# print('sectionid:%d,questionid:%d' % (self.sectionid_selected_in_ModifyBox,self.questionid_in_ModifyBox))
+		if self.sectionid_selected_in_ModifyBox == 0 or self.questionid_in_ModifyBox == 0:
+			self.btn_next.setEnabled(False)
+			self.btn_previous.setEnabled(False)
+			self.btn_modify.setEnabled(False)
+			self.btn_delete.setEnabled(False)
+			self.btn_copy.setEnabled(False)
+			self.lbl_sequence_in_ModifyBox.setText('题目序列：0/0')
+			self.webView_in_ModifyBox.setHtml(myfun.gethtml(self.webView_in_ModifyBox.width()))
+			return
+		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
+			searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice where id=%d' % (self.questionid_in_ModifyBox))
+		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
+			searchstring = ('select "question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source" from mchoice where id=%d' % (self.questionid_in_ModifyBox))
+		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
+			searchstring = ('select "question", "correct", "explain", "section", "difficulty", "source" from tof where id=%d' % (self.questionid_in_ModifyBox))
+		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
+			searchstring = ('select "question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source" from blank where id=%d' % (self.questionid_in_ModifyBox))
+		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
+			searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation where id=%d' % (self.questionid_in_ModifyBox))
+		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
+			searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof where id=%d' % (self.questionid_in_ModifyBox))
+		thisquestion = mydb.search(searchstring)
+		self.question_data_in_ModifyBox = [i for i in thisquestion[0]]
+		questionstring = myfun.format_question_to_html(self.question_data_in_ModifyBox, self.list_type_of_question_in_ModifyBox.currentText())
+		pageSourceContent = questionstring
+		self.webView_in_ModifyBox.setHtml(myfun.gethtml(self.webView_in_ModifyBox.width(), pageSourceContent))
+		index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
+		self.btn_previous.setEnabled(index != 0)
+		self.btn_modify.setEnabled(True)
+		self.btn_delete.setEnabled(True)
+		self.btn_copy.setEnabled(True)
+		self.btn_next.setEnabled(index != len(self.questionids_in_ModifyBox)-1)
+		self.lbl_sequence_in_ModifyBox.setText('题目序列：%d/%d' % (index+1, len(self.questionids_in_ModifyBox)))
+
+	# 更新预览
+	def update_preview_in_BrowseBox(self):
+		if not self.selected_sectionsid_in_BrowseBox:
+			self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width()))
+			return
+		sectionstring = (' where section=' + str(self.selected_sectionsid_in_BrowseBox[0]))
+		for i in self.selected_sectionsid_in_BrowseBox:
+			sectionstring = sectionstring + ' or section=' + str(i)
+		# 读单选题表
+		searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice' + sectionstring)
+		schoice = mydb.search(searchstring)
+		num_schoice = len(schoice)
+		# 读多选题表
+		searchstring = ('select "question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source" from mchoice' + sectionstring)
+		mchoice = mydb.search(searchstring)
+		num_mchoice = len(mchoice)
+		# 读判断题表
+		searchstring = ('select "question", "correct", "explain", "section", "difficulty", "source" from tof' + sectionstring)
+		tof = mydb.search(searchstring)
+		num_tof = len(tof)
+		# 读填空题表
+		searchstring = ('select "question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source" from blank' + sectionstring)
+		blank = mydb.search(searchstring)
+		num_blank = len(blank)
+		# 读计算题表
+		searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation' + sectionstring)
+		calculation = mydb.search(searchstring)
+		num_calculation = len(calculation)
+		# 读证明题表
+		searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof' + sectionstring)
+		proof = mydb.search(searchstring)
+		num_proof = len(proof)
+
+		if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
+			self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width()))
+			return
+		
+		pageSourceContent = ''
+		# 写入单选题
+		if self.chk_schoice_in_BrowseBox.isChecked():
+			if num_schoice>0:
+				pageSourceContent += ('</p><h2>单选题</h2>')
+				for i in range(num_schoice):
+					thisquestion = [j for j in schoice[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '单选题', str(i+1))
+					pageSourceContent += questionstring
+
+		# 写入多选题
+		if self.chk_mchoice_in_BrowseBox.isChecked():
+			if num_mchoice>0:
+				pageSourceContent += ('</p><h2>多选题</h2>')
+				for i in range(num_mchoice):
+					thisquestion = [j for j in mchoice[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '多选题', str(i+1))
+					pageSourceContent += questionstring
+
+		# 写入判断题
+		if self.chk_tof_in_BrowseBox.isChecked():
+			if num_tof>0:
+				pageSourceContent += ('</p><h2>判断题</h2>')
+				answertext = ['错误', '正确']
+				for i in range(num_tof):
+					thisquestion = [j for j in tof[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '判断题', str(i+1))
+					pageSourceContent += questionstring
+
+		# 写入填空题
+		if self.chk_blank_in_BrowseBox.isChecked():
+			if num_blank>0:
+				pageSourceContent += ('</p><h2>填空题</h2>')
+				for i in range(num_blank):
+					thisquestion = [j for j in blank[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '填空题', str(i+1))
+					pageSourceContent += questionstring
+
+		# 写入计算题
+		if self.chk_calculation_in_BrowseBox.isChecked():
+			if num_calculation>0:
+				pageSourceContent += ('</p><h2>计算题</h2>')
+				for i in range(num_calculation):
+					thisquestion = [j for j in calculation[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '计算题', str(i+1))
+					pageSourceContent += questionstring
+
+		# 写入证明题
+		if self.chk_proof_in_BrowseBox.isChecked():
+			if num_proof>0:
+				pageSourceContent += ('</p><h2>证明题</h2>')
+				for i in range(num_proof):
+					thisquestion = [j for j in proof[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '证明题', str(i+1))
+					pageSourceContent += questionstring
+
+		self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width(), pageSourceContent))
+
+	def retrieve_data(self):
+		searchstring = 'select * from chapters'
+		self.chapters = mydb.search(searchstring)
+		searchstring = 'select * from sections'
+		self.sections = mydb.search(searchstring)
+		searchstring = 'select * from difficulties'
+		self.difficulties = mydb.search(searchstring)
+		searchstring = 'select * from sources'
+		self.sources = mydb.search(searchstring)
+
+	def retrieve_questionids_in_ModifyBox(self):
+		if self.sectionid_selected_in_ModifyBox == 0:
+			self.update_preview_in_ModifyBox()
+			return
+		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
+			searchstring = ('select "id" from schoice where section = %d' % (self.sectionid_selected_in_ModifyBox))
+			schoice = mydb.search(searchstring)
+			self.questionids_in_ModifyBox = [i[0] for i in schoice] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
+			searchstring = ('select "id" from mchoice where section = %d' % (self.sectionid_selected_in_ModifyBox))
+			mchoice = mydb.search(searchstring)
+			self.questionids_in_ModifyBox = [i[0] for i in mchoice] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
+			searchstring = ('select "id" from tof where section = %d' % (self.sectionid_selected_in_ModifyBox))
+			tof = mydb.search(searchstring)
+			self.questionids_in_ModifyBox = [i[0] for i in tof] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
+			searchstring = ('select "id" from blank where section = %d' % (self.sectionid_selected_in_ModifyBox))
+			blank = mydb.search(searchstring)
+			self.questionids_in_ModifyBox = [i[0] for i in blank] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
+			searchstring = ('select "id" from calculation where section = %d' % (self.sectionid_selected_in_ModifyBox))
+			calculation = mydb.search(searchstring)
+			self.questionids_in_ModifyBox = [i[0] for i in calculation] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
+			searchstring = ('select "id" from proof where section = %d' % (self.sectionid_selected_in_ModifyBox))
+			proof = mydb.search(searchstring)
+			self.questionids_in_ModifyBox = [i[0] for i in proof] # 指定章节指定题型的所有id列表
+		if self.questionids_in_ModifyBox:
+			self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[0]
+		else:
+			self.questionid_in_ModifyBox = 0
+		self.update_preview_in_ModifyBox()
+
 	def transmit_settings(self, ui): # 将设置传递给打开的子窗口
-		ui.other_settings.connect(self.update_added_settings)
+		ui.other_settings.connect(self.update_after_insertion)
 		i = 0
 		while self.last_added_section_id != self.sections[i][0]:
 			i += 1
@@ -523,70 +1120,7 @@ class MainWindow(QWidget):
 		while self.last_added_source_id != self.sources[i][0]:
 			i += 1
 		ui.list_source.setCurrentIndex(i)
-
-	def btn_addschoice_clicked(self):
-		self.add_schoice_ui = AddSingleChoice()
-		self.transmit_settings(self.add_schoice_ui)
-		self.add_schoice_ui.show()
-
-	def btn_addmchoice_clicked(self):
-		self.add_mchoice_ui = AddMultipleChoice()
-		self.transmit_settings(self.add_mchoice_ui)
-		self.add_mchoice_ui.show()
-
-	def btn_addtof_clicked(self):
-		self.add_tof_ui = AddToF()
-		self.transmit_settings(self.add_tof_ui)
-		self.add_tof_ui.show()
 	
-	def btn_addblank_clicked(self):
-		self.add_blank_ui = AddFillinBlanks()
-		self.transmit_settings(self.add_blank_ui)
-		self.add_blank_ui.show()
-
-	def btn_addcalculate_clicked(self):
-		self.add_calculation_ui = AddCalculation()
-		self.transmit_settings(self.add_calculation_ui)
-		self.add_calculation_ui.show()
-
-	def btn_addprove_clicked(self):
-		self.add_proof_ui = AddProof()
-		self.transmit_settings(self.add_proof_ui)
-		self.add_proof_ui.show()
-
-	def update_added_settings(self, other_settings): # 添加题目后主界面更新
-		self.last_added_section_id = other_settings[0]
-		self.last_added_difficulty_id = other_settings[1]
-		self.last_added_source_id = other_settings[2]
-		self.update_total_questions_sum()
-		self.update_preview_in_BrowseBox()
-		self.retrieve_questionids_in_ModifyBox()
-		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
-
-	def update_after_modification(self, other_settings): # 修改题目后主界面更新
-		if self.sectionid_selected_in_ModifyBox != other_settings[0]:
-			index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
-			self.questionids_in_ModifyBox.remove(self.questionid_in_ModifyBox)
-			if len(self.questionids_in_ModifyBox) == 0:
-				self.questionid_in_ModifyBox = 0
-			elif index == len(self.questionids_in_ModifyBox):
-				self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index - 1]
-			else:
-				self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index]
-		self.update_preview_in_BrowseBox()
-		self.update_preview_in_ModifyBox()
-		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
-
-	def retrieve_data(self):
-		searchstring = 'select * from chapters'
-		self.chapters = mydb.search(searchstring)
-		searchstring = 'select * from sections'
-		self.sections = mydb.search(searchstring)
-		searchstring = 'select * from difficulties'
-		self.difficulties = mydb.search(searchstring)
-		searchstring = 'select * from sources'
-		self.sources = mydb.search(searchstring)
-		
 	def export_questions(self):
 		if not self.selected_sectionids_in_ExportBox:
 			QMessageBox.about(self, u'通知', u'请先选择章节！')
@@ -788,421 +1322,7 @@ class MainWindow(QWidget):
 			QMessageBox.about(self, u'错误', u'导出失败！')
 			return
 
-	def tree_sections_clicked(self):
-		currentItem = self.tree_sections.currentItem()
-		if currentItem in self.roots_in_BrowseBox: # 如果点击的是章
-			if (not currentItem.isSelected()) and (currentItem in self.chapters_selected_previously): # 如果上次选中，这次没选中，则设置所有子节点未选中
-				self.chapters_selected_previously.remove(currentItem)
-				for i in range(currentItem.childCount()):
-					currentItem.child(i).setSelected(False)
-			elif (currentItem.isSelected()) and (currentItem not in self.chapters_selected_previously): # 如果上次未选中，这次选中，则设置所有子节点选中
-				self.chapters_selected_previously.append(currentItem)
-				for i in range(currentItem.childCount()):
-					currentItem.child(i).setSelected(True)
-		else: # 如果点击的是节
-			if (not currentItem.isSelected()) and currentItem.parent().isSelected(): # 如果点击的节取消选中，且其父节点章被选中，则设置父节点为未选中
-				currentItem.parent().setSelected(False)
-				self.chapters_selected_previously.remove(currentItem.parent())
-		items = self.tree_sections.selectedItems()
-		self.selected_sectionsid_in_BrowseBox = []
-		for item in items:
-			if item not in self.roots_in_BrowseBox: # 不是父节点的话
-				i = 0
-				while item.text(0) != self.sections[i][1]:
-					i = i + 1
-				self.selected_sectionsid_in_BrowseBox.append(self.sections[i][0])
-			else:
-				pass
-		self.update_preview_in_BrowseBox()
-
-	def tree_sections_in_ModifyBox_clicked(self):
-		currentItem = self.tree_sections_in_ModifyBox.currentItem()
-		if currentItem.isSelected():
-			if currentItem not in self.roots_in_ModifyBox:
-				i = 0
-				while currentItem.text(0) != self.sections[i][1]:
-					i += 1
-				self.sectionid_selected_in_ModifyBox = self.sections[i][0]
-			else:
-				self.sectionid_selected_in_ModifyBox = 0
-		else:
-			self.sectionid_selected_in_ModifyBox = 0
-		self.retrieve_questionids_in_ModifyBox()
-
-	def retrieve_questionids_in_ModifyBox(self):
-		if self.sectionid_selected_in_ModifyBox == 0:
-			self.update_preview_in_ModifyBox()
-			return
-		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
-			searchstring = ('select "id" from schoice where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			schoice = mydb.search(searchstring)
-			self.questionids_in_ModifyBox = [i[0] for i in schoice] # 指定章节指定题型的所有id列表
-		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
-			searchstring = ('select "id" from mchoice where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			mchoice = mydb.search(searchstring)
-			self.questionids_in_ModifyBox = [i[0] for i in mchoice] # 指定章节指定题型的所有id列表
-		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
-			searchstring = ('select "id" from tof where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			tof = mydb.search(searchstring)
-			self.questionids_in_ModifyBox = [i[0] for i in tof] # 指定章节指定题型的所有id列表
-		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
-			searchstring = ('select "id" from blank where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			blank = mydb.search(searchstring)
-			self.questionids_in_ModifyBox = [i[0] for i in blank] # 指定章节指定题型的所有id列表
-		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
-			searchstring = ('select "id" from calculation where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			calculation = mydb.search(searchstring)
-			self.questionids_in_ModifyBox = [i[0] for i in calculation] # 指定章节指定题型的所有id列表
-		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
-			searchstring = ('select "id" from proof where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			proof = mydb.search(searchstring)
-			self.questionids_in_ModifyBox = [i[0] for i in proof] # 指定章节指定题型的所有id列表
-		if self.questionids_in_ModifyBox:
-			self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[0]
-		else:
-			self.questionid_in_ModifyBox = 0
-		self.update_preview_in_ModifyBox()
-
-	def update_preview_in_ModifyBox(self):
-		# print('sectionid:%d,questionid:%d' % (self.sectionid_selected_in_ModifyBox,self.questionid_in_ModifyBox))
-		if self.sectionid_selected_in_ModifyBox == 0 or self.questionid_in_ModifyBox == 0:
-			self.btn_next.setEnabled(False)
-			self.btn_previous.setEnabled(False)
-			self.btn_modify.setEnabled(False)
-			self.btn_delete.setEnabled(False)
-			self.lbl_sequence_in_ModifyBox.setText('题目序列：0/0')
-			self.webView_in_ModifyBox.setHtml(self.pageSourceHead+self.pageSourceFoot)
-			return
-		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
-			searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice where id=%d' % (self.questionid_in_ModifyBox))
-		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
-			searchstring = ('select "question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source" from mchoice where id=%d' % (self.questionid_in_ModifyBox))
-		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
-			searchstring = ('select "question", "correct", "explain", "section", "difficulty", "source" from tof where id=%d' % (self.questionid_in_ModifyBox))
-		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
-			searchstring = ('select "question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source" from blank where id=%d' % (self.questionid_in_ModifyBox))
-		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
-			searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation where id=%d' % (self.questionid_in_ModifyBox))
-		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
-			searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof where id=%d' % (self.questionid_in_ModifyBox))
-		thisquestion = mydb.search(searchstring)
-		self.question_data_in_ModifyBox = [i for i in thisquestion[0]]
-		questionstring = myfun.format_question_to_html(self.question_data_in_ModifyBox, self.list_type_of_question_in_ModifyBox.currentText())
-		self.pageSourceContent = questionstring
-		self.webView_in_ModifyBox.setHtml(self.pageSourceHead+self.pageSourceContent+self.pageSourceFoot)
-		index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
-		self.btn_previous.setEnabled(index != 0)
-		self.btn_modify.setEnabled(True)
-		self.btn_delete.setEnabled(True)
-		self.btn_next.setEnabled(index != len(self.questionids_in_ModifyBox)-1)
-		self.lbl_sequence_in_ModifyBox.setText('题目序列：%d/%d' % (index+1, len(self.questionids_in_ModifyBox)))
-	
-	def btn_previous_clicked(self):
-		index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
-		if index != 0:
-			self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index-1]
-		self.update_preview_in_ModifyBox()
-
-	def btn_next_clicked(self):
-		index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
-		if index != len(self.questionids_in_ModifyBox)-1:
-			self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index+1]
-		self.update_preview_in_ModifyBox()
-	
-	def btn_modify_clicked(self):
-		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
-			self.add_schoice_ui = AddSingleChoice()
-			self.add_schoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
-			if self.question_data_in_ModifyBox[5] == 'A':
-				self.add_schoice_ui.btn_A.setChecked(Ture)
-				self.add_schoice_ui.clickA()
-			elif self.question_data_in_ModifyBox[5] == 'B':
-				self.add_schoice_ui.btn_B.setChecked(True)
-				self.add_schoice_ui.clickB()
-			elif self.question_data_in_ModifyBox[5] == 'C':
-				self.add_schoice_ui.btn_C.setChecked(True)
-				self.add_schoice_ui.clickC()
-			elif self.question_data_in_ModifyBox[5] == 'D':
-				self.add_schoice_ui.btn_D.setChecked(True)
-				self.add_schoice_ui.clickD()
-			self.add_schoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[6].replace('\\\\\n','\n'))
-			i = 0
-			while self.question_data_in_ModifyBox[7] != self.sections[i][0]:
-				i += 1
-			self.add_schoice_ui.list_section.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[8] != self.difficulties[i][0]:
-				i += 1
-			self.add_schoice_ui.list_difficulty.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[9] != self.sources[i][0]:
-				i += 1
-			self.add_schoice_ui.list_source.setCurrentIndex(i)
-			self.add_schoice_ui.other_settings.connect(self.update_after_modification)
-			self.add_schoice_ui.modification = self.questionid_in_ModifyBox
-			self.add_schoice_ui.btn_add.setText('修改题目')
-			# self.add_schoice_ui.update_preview()
-			self.add_schoice_ui.show()
-		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
-			self.add_mchoice_ui = AddMultipleChoice()
-			self.add_mchoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.btn_A.setCurrentIndex(self.question_data_in_ModifyBox[5])
-			self.add_mchoice_ui.btn_B.setCurrentIndex(self.question_data_in_ModifyBox[6])
-			self.add_mchoice_ui.btn_C.setCurrentIndex(self.question_data_in_ModifyBox[7])
-			self.add_mchoice_ui.btn_D.setCurrentIndex(self.question_data_in_ModifyBox[8])
-			self.add_mchoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[9].replace('\\\\\n','\n'))
-			i = 0
-			while self.question_data_in_ModifyBox[10] != self.sections[i][0]:
-				i += 1
-			self.add_mchoice_ui.list_section.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[11] != self.difficulties[i][0]:
-				i += 1
-			self.add_mchoice_ui.list_difficulty.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[12] != self.sources[i][0]:
-				i += 1
-			self.add_mchoice_ui.list_source.setCurrentIndex(i)
-			self.add_mchoice_ui.other_settings.connect(self.update_after_modification)
-			self.add_mchoice_ui.modification = self.questionid_in_ModifyBox
-			self.add_mchoice_ui.btn_add.setText('修改题目')
-			# self.add_mchoice_ui.update_preview()
-			self.add_mchoice_ui.show()
-		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
-			self.add_tof_ui = AddToF()
-			self.add_tof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
-			self.add_tof_ui.list_answer.setCurrentIndex(self.question_data_in_ModifyBox[1])
-			self.add_tof_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
-			i = 0
-			while self.question_data_in_ModifyBox[3] != self.sections[i][0]:
-				i += 1
-			self.add_tof_ui.list_section.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[4] != self.difficulties[i][0]:
-				i += 1
-			self.add_tof_ui.list_difficulty.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[5] != self.sources[i][0]:
-				i += 1
-			self.add_tof_ui.list_source.setCurrentIndex(i)
-			self.add_tof_ui.other_settings.connect(self.update_after_modification)
-			self.add_tof_ui.modification = self.questionid_in_ModifyBox
-			self.add_tof_ui.btn_add.setText('修改题目')
-			# self.add_tof_ui.update_preview()
-			self.add_tof_ui.show()
-		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
-			self.add_blank_ui = AddFillinBlanks()
-			self.add_blank_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer1.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer2.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer3.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer4.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[5].replace('\\\\\n','\n'))
-			i = 0
-			while self.question_data_in_ModifyBox[6] != self.sections[i][0]:
-				i += 1
-			self.add_blank_ui.list_section.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[7] != self.difficulties[i][0]:
-				i += 1
-			self.add_blank_ui.list_difficulty.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[8] != self.sources[i][0]:
-				i += 1
-			self.add_blank_ui.list_source.setCurrentIndex(i)
-			self.add_blank_ui.other_settings.connect(self.update_after_modification)
-			self.add_blank_ui.modification = self.questionid_in_ModifyBox
-			self.add_blank_ui.btn_add.setText('修改题目')
-			# self.add_blank_ui.update_preview()
-			self.add_blank_ui.show()
-		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
-			self.add_calculation_ui = AddCalculation()
-			self.add_calculation_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
-			self.add_calculation_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
-			i = 0
-			while self.question_data_in_ModifyBox[2] != self.sections[i][0]:
-				i += 1
-			self.add_calculation_ui.list_section.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[3] != self.difficulties[i][0]:
-				i += 1
-			self.add_calculation_ui.list_difficulty.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[4] != self.sources[i][0]:
-				i += 1
-			self.add_calculation_ui.list_source.setCurrentIndex(i)
-			self.add_calculation_ui.other_settings.connect(self.update_after_modification)
-			self.add_calculation_ui.modification = self.questionid_in_ModifyBox
-			self.add_calculation_ui.btn_add.setText('修改题目')
-			# self.add_calculation_ui.update_preview()
-			self.add_calculation_ui.show()
-		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
-			self.add_proof_ui = AddProof()
-			self.add_proof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
-			self.add_proof_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
-			i = 0
-			while self.question_data_in_ModifyBox[2] != self.sections[i][0]:
-				i += 1
-			self.add_proof_ui.list_section.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[3] != self.difficulties[i][0]:
-				i += 1
-			self.add_proof_ui.list_difficulty.setCurrentIndex(i)
-			i = 0
-			while self.question_data_in_ModifyBox[4] != self.sources[i][0]:
-				i += 1
-			self.add_proof_ui.list_source.setCurrentIndex(i)
-			self.add_proof_ui.other_settings.connect(self.update_after_modification)
-			self.add_proof_ui.modification = self.questionid_in_ModifyBox
-			self.add_proof_ui.btn_add.setText('修改题目')
-			# self.add_proof_ui.update_preview()
-			self.add_proof_ui.show()
-
-	def btn_delete_clicked(self):
-		reply = QMessageBox.question(self, u'询问', u'确认删除当前题目？', QMessageBox.Yes, QMessageBox.No)
-		if reply == QMessageBox.Yes:
-			if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
-				deletestring = ('delete from schoice where id = %d' % (self.questionid_in_ModifyBox))
-			if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
-				deletestring = ('delete from mchoice where id = %d' % (self.questionid_in_ModifyBox))
-			if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
-				deletestring = ('delete from tof where id = %d' % (self.questionid_in_ModifyBox))
-			if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
-				deletestring = ('delete from blank where id = %d' % (self.questionid_in_ModifyBox))
-			if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
-				deletestring = ('delete from calculation where id = %d' % (self.questionid_in_ModifyBox))
-			if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
-				deletestring = ('delete from proof where id = %d' % (self.questionid_in_ModifyBox))
-			if mydb.insert(deletestring):
-				QMessageBox.about(self, '通知', '删除成功！')
-				index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
-				self.questionids_in_ModifyBox.remove(self.questionid_in_ModifyBox)
-				if len(self.questionids_in_ModifyBox) == 0:
-					self.questionid_in_ModifyBox = 0 # 如果删除后当前题目列表为空，则问题id清0
-				elif index == len(self.questionids_in_ModifyBox):
-					self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index - 1]
-				else:
-					self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index]
-				self.update_preview_in_ModifyBox()
-				self.update_preview_in_BrowseBox()
-				self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
-			else:
-				QMessageBox.about(self, '通知', '删除失败！')
-
-	# 更新预览
-	def update_preview_in_BrowseBox(self):
-		if not self.selected_sectionsid_in_BrowseBox:
-			self.webView_in_BrowseBox.setHtml(self.pageSourceHead+self.pageSourceFoot)
-			return
-		sectionstring = (' where section=' + str(self.selected_sectionsid_in_BrowseBox[0]))
-		for i in self.selected_sectionsid_in_BrowseBox:
-			sectionstring = sectionstring + ' or section=' + str(i)
-		# 读单选题表
-		searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice' + sectionstring)
-		schoice = mydb.search(searchstring)
-		num_schoice = len(schoice)
-		# 读多选题表
-		searchstring = ('select "question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source" from mchoice' + sectionstring)
-		mchoice = mydb.search(searchstring)
-		num_mchoice = len(mchoice)
-		# 读判断题表
-		searchstring = ('select "question", "correct", "explain", "section", "difficulty", "source" from tof' + sectionstring)
-		tof = mydb.search(searchstring)
-		num_tof = len(tof)
-		# 读填空题表
-		searchstring = ('select "question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source" from blank' + sectionstring)
-		blank = mydb.search(searchstring)
-		num_blank = len(blank)
-		# 读计算题表
-		searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation' + sectionstring)
-		calculation = mydb.search(searchstring)
-		num_calculation = len(calculation)
-		# 读证明题表
-		searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof' + sectionstring)
-		proof = mydb.search(searchstring)
-		num_proof = len(proof)
-
-		if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
-			self.webView_in_BrowseBox.setHtml(self.pageSourceHead+self.pageSourceFoot)
-			return
-		
-		self.pageSourceContent = ''
-		# 写入单选题
-		if self.chk_schoice_in_BrowseBox.isChecked():
-			if num_schoice>0:
-				self.pageSourceContent += ('</p><h2>单选题</h2>')
-				for i in range(num_schoice):
-					thisquestion = [j for j in schoice[i]]
-					questionstring = myfun.format_question_to_html(thisquestion, '单选题', str(i+1))
-					self.pageSourceContent += questionstring
-
-		# 写入多选题
-		if self.chk_mchoice_in_BrowseBox.isChecked():
-			if num_mchoice>0:
-				self.pageSourceContent += ('</p><h2>多选题</h2>')
-				for i in range(num_mchoice):
-					thisquestion = [j for j in mchoice[i]]
-					questionstring = myfun.format_question_to_html(thisquestion, '多选题', str(i+1))
-					self.pageSourceContent += questionstring
-
-		# 写入判断题
-		if self.chk_tof_in_BrowseBox.isChecked():
-			if num_tof>0:
-				self.pageSourceContent += ('</p><h2>判断题</h2>')
-				answertext = ['错误', '正确']
-				for i in range(num_tof):
-					thisquestion = [j for j in tof[i]]
-					questionstring = myfun.format_question_to_html(thisquestion, '判断题', str(i+1))
-					self.pageSourceContent += questionstring
-
-		# 写入填空题
-		if self.chk_blank_in_BrowseBox.isChecked():
-			if num_blank>0:
-				self.pageSourceContent += ('</p><h2>填空题</h2>')
-				for i in range(num_blank):
-					thisquestion = [j for j in blank[i]]
-					questionstring = myfun.format_question_to_html(thisquestion, '填空题', str(i+1))
-					self.pageSourceContent += questionstring
-
-		# 写入计算题
-		if self.chk_calculation_in_BrowseBox.isChecked():
-			if num_calculation>0:
-				self.pageSourceContent += ('</p><h2>计算题</h2>')
-				for i in range(num_calculation):
-					thisquestion = [j for j in calculation[i]]
-					questionstring = myfun.format_question_to_html(thisquestion, '计算题', str(i+1))
-					self.pageSourceContent += questionstring
-
-		# 写入证明题
-		if self.chk_proof_in_BrowseBox.isChecked():
-			if num_proof>0:
-				self.pageSourceContent += ('</p><h2>证明题</h2>')
-				for i in range(num_proof):
-					thisquestion = [j for j in proof[i]]
-					questionstring = myfun.format_question_to_html(thisquestion, '证明题', str(i+1))
-					self.pageSourceContent += questionstring
-
-		self.webView_in_BrowseBox.setHtml(self.pageSourceHead+self.pageSourceContent+self.pageSourceFoot)
-
-	def resize_preview_in_BrowseBox(self):
-		newwidth='width: '+ str(self.webView_in_BrowseBox.width()-5) +'px;'
-		self.pageSourceHead = re.sub(r'width: \d*px;', newwidth, self.pageSourceHead)
-		self.update_preview_in_BrowseBox()
-
-	def resize_preview_in_ModifyBox(self):
-		newwidth='width: '+ str(self.webView_in_ModifyBox.width()-5) +'px;'
-		self.pageSourceHead = re.sub(r'width: \d*px;', newwidth, self.pageSourceHead)
-		self.update_preview_in_ModifyBox()
-
 	# 调整窗口大小事件
 	def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
-		self.resize_preview_in_BrowseBox()
-		self.resize_preview_in_ModifyBox()
+		self.update_preview_in_BrowseBox()
+		self.update_preview_in_ModifyBox()

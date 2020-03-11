@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import re
 import database as mydb
+import myfunctions as myfun
 
 class AddCalculation(QWidget):
     other_settings = pyqtSignal(list)
@@ -30,39 +31,9 @@ class AddCalculation(QWidget):
         self.input_question.textChanged.connect(self.update_preview)
         question_layout.addWidget(self.input_question)
         question_box.setLayout(question_layout)
-        
 
         preview_box = QGroupBox('预览（仅供参考）')
         preview_layout = QVBoxLayout()
-        path = QDir.current().filePath(r'MathJax-3.0.1/es5/tex-mml-chtml.js') 
-        mathjax = QUrl.fromLocalFile(path).toString()
-        self.pageSourceHead = r'''
-        <html><head>
-        <script>
-            window.MathJax = {
-                loader: {load: ['[tex]/physics']},
-                tex: {
-                    packages: {'[+]': ['physics']},
-                    inlineMath: [['$','$'],['\\(','\\)']],
-                }
-            };
-            </script>
-        <script type="text/javascript" id="MathJax-script" async src="''' + mathjax + r'''"></script>
-        <style>
-            body {
-                margin: 0 auto;
-                width: 429px;
-            }
-            p {
-                font-size: 18pt;
-            }
-        </style>
-        </head>
-        <body>
-        <p>'''
-        self.pageSourceFoot = r'''</p>
-        </body>
-        </html>'''
         self.webView = QWebEngineView()
         self.webView.setContextMenuPolicy(0) # 禁止右键菜单
         preview_layout.addWidget(self.webView)
@@ -117,7 +88,7 @@ class AddCalculation(QWidget):
         mainlayout.setRowStretch(1,3)
         mainlayout.setRowStretch(2,1)
         self.setLayout(mainlayout)
-        self.webView.setHtml(self.pageSourceHead+self.pageSourceFoot)
+        self.webView.setHtml(myfun.gethtml(self.webView.width()))
         self.shortcut()
 
 
@@ -169,9 +140,9 @@ class AddCalculation(QWidget):
 
     # 更新预览
     def update_preview(self):
-        self.pageSourceContent = (self.input_question.toPlainText().strip().replace('\n', '</br>')
+        pageSourceContent = (self.input_question.toPlainText().strip().replace('\n', '</br>')
                                     + '</p><p>解： ' + self.answer.replace('\n', '</br>'))
-        self.webView.setHtml(self.pageSourceHead+self.pageSourceContent+self.pageSourceFoot)
+        self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def insert_question(self):
         add = False
@@ -212,17 +183,12 @@ class AddCalculation(QWidget):
                 else:
                     QMessageBox.about(self, u'错误', u'修改题目失败！')
 
-    def refresh_prevew(self):
-        newwidth='width: '+ str(self.webView.width()) +'px;'
-        self.pageSourceHead = re.sub(r'width: \d*px;', newwidth, self.pageSourceHead)
-        self.update_preview()
-
     # 调整窗口大小事件
     def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
-        self.refresh_prevew()
+        self.update_preview()
 
     def showEvent(self, event):
-        self.refresh_prevew()
+        self.update_preview()
 
     def shortcut(self):
         self.act_setfocus_question = QAction()
