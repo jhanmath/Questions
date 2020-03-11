@@ -24,7 +24,7 @@ class MainWindow(QWidget):
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
 		self.ver = '2020.03.10'
-		self.selected_sectionid = [48, 49, 50, 51, 52, 53]
+		self.selected_sectionids_in_ExportBox = [48, 49, 50, 51, 52, 53]
 		self.last_added_section_id = 1
 		self.last_added_difficulty_id = 1
 		self.last_added_source_id = 1
@@ -64,7 +64,7 @@ class MainWindow(QWidget):
 
 		self.setLayout(mainlayout)
 
-		self.update_sections(self.selected_sectionid)
+		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
 
 		self.resize(1000, 800)
 		self.setWindowTitle("数学题库")
@@ -334,6 +334,7 @@ class MainWindow(QWidget):
 		self.btn_previous.clicked.connect(self.btn_previous_clicked)
 		self.btn_next.clicked.connect(self.btn_next_clicked)
 		self.btn_modify.clicked.connect(self.btn_modify_clicked)
+		self.btn_delete.clicked.connect(self.btn_delete_clicked)
 		layout_navi_btn.addWidget(self.btn_previous)
 		layout_navi_btn.addWidget(self.btn_modify)
 		layout_navi_btn.addWidget(self.btn_delete)
@@ -443,57 +444,57 @@ class MainWindow(QWidget):
 
 	def btn_changesections_clicked(self):
 		self.select_sections_ui = SelectSections()
-		self.select_sections_ui.signal.connect(self.update_sections)
+		self.select_sections_ui.signal.connect(self.update_sections_in_ExportBox)
 		self.singal_sectionid.connect(self.select_sections_ui.initialize)
-		self.singal_sectionid.emit(self.selected_sectionid)
+		self.singal_sectionid.emit(self.selected_sectionids_in_ExportBox)
 		self.select_sections_ui.show()
 
-	def update_sections(self, sectionid):
-		self.selected_sectionid = sectionid
-		self.tbl_selectedsections.setRowCount(len(sectionid))
+	def update_sections_in_ExportBox(self, sectionids):
+		self.selected_sectionids_in_ExportBox = sectionids
+		self.tbl_selectedsections.setRowCount(len(sectionids))
 		total_num_schoice = 0
 		total_num_mchoice = 0
 		total_num_tof = 0
 		total_num_blank = 0
 		total_num_calculation = 0
 		total_num_proof = 0
-		for i in range(len(sectionid)):
+		for i in range(len(sectionids)):
 			j = 0
-			while self.sections[j][0] != sectionid[i]:
+			while self.sections[j][0] != sectionids[i]:
 				j = j + 1
 			newItem = QTableWidgetItem(self.sections[j][1])
 			self.tbl_selectedsections.setItem(i, 0, newItem)
-			searchstring = ('select count(*) from schoice where section=%d' % (sectionid[i]))
+			searchstring = ('select count(*) from schoice where section=%d' % (sectionids[i]))
 			num_schoice = mydb.search(searchstring)[0][0]
 			total_num_schoice = total_num_schoice + num_schoice
 			newItem = QTableWidgetItem(str(num_schoice))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 1, newItem)
-			searchstring = ('select count(*) from mchoice where section=%d' % (sectionid[i]))
+			searchstring = ('select count(*) from mchoice where section=%d' % (sectionids[i]))
 			num_mchoice = mydb.search(searchstring)[0][0]
 			total_num_mchoice = total_num_mchoice + num_mchoice
 			newItem = QTableWidgetItem(str(num_mchoice))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 2, newItem)
-			searchstring = ('select count(*) from tof where section=%d' % (sectionid[i]))
+			searchstring = ('select count(*) from tof where section=%d' % (sectionids[i]))
 			num_tof = mydb.search(searchstring)[0][0]
 			total_num_tof = total_num_tof + num_tof
 			newItem = QTableWidgetItem(str(num_tof))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 3, newItem)
-			searchstring = ('select count(*) from blank where section=%d' % (sectionid[i]))
+			searchstring = ('select count(*) from blank where section=%d' % (sectionids[i]))
 			num_blank = mydb.search(searchstring)[0][0]
 			total_num_blank = total_num_blank + num_blank
 			newItem = QTableWidgetItem(str(num_blank))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 4, newItem)
-			searchstring = ('select count(*) from calculation where section=%d' % (sectionid[i]))
+			searchstring = ('select count(*) from calculation where section=%d' % (sectionids[i]))
 			num_calculation = mydb.search(searchstring)[0][0]
 			total_num_calculation = total_num_calculation + num_calculation
 			newItem = QTableWidgetItem(str(num_calculation))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 5, newItem)
-			searchstring = ('select count(*) from proof where section=%d' % (sectionid[i]))
+			searchstring = ('select count(*) from proof where section=%d' % (sectionids[i]))
 			num_proof = mydb.search(searchstring)[0][0]
 			total_num_proof = total_num_proof + num_proof
 			newItem = QTableWidgetItem(str(num_proof))
@@ -557,12 +558,22 @@ class MainWindow(QWidget):
 		self.last_added_source_id = other_settings[2]
 		self.update_total_questions_sum()
 		self.update_preview_in_BrowseBox()
-		self.update_preview_in_ModifyBox()
-		self.update_sections(self.selected_sectionid)
+		self.retrieve_questionids_in_ModifyBox()
+		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
 
 	def update_after_modification(self, other_settings): # 修改题目后主界面更新
+		if self.sectionid_selected_in_ModifyBox != other_settings[0]:
+			index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
+			self.questionids_in_ModifyBox.remove(self.questionid_in_ModifyBox)
+			if len(self.questionids_in_ModifyBox) == 0:
+				self.questionid_in_ModifyBox = 0
+			elif index == len(self.questionids_in_ModifyBox):
+				self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index - 1]
+			else:
+				self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index]
 		self.update_preview_in_BrowseBox()
 		self.update_preview_in_ModifyBox()
+		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
 
 	def retrieve_data(self):
 		searchstring = 'select * from chapters'
@@ -575,12 +586,12 @@ class MainWindow(QWidget):
 		self.sources = mydb.search(searchstring)
 		
 	def export_questions(self):
-		if not self.selected_sectionid:
+		if not self.selected_sectionids_in_ExportBox:
 			QMessageBox.about(self, u'通知', u'请先选择章节！')
 			return
-		sectionstring = (' where section=' + str(self.selected_sectionid[0]))
-		for i in range(1, len(self.selected_sectionid)):
-			sectionstring = sectionstring + ' or section=' + str(self.selected_sectionid[i])
+		sectionstring = (' where section=' + str(self.selected_sectionids_in_ExportBox[0]))
+		for i in range(1, len(self.selected_sectionids_in_ExportBox)):
+			sectionstring = sectionstring + ' or section=' + str(self.selected_sectionids_in_ExportBox[i])
 		# 读单选题表
 		searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice' + sectionstring)
 		schoice = mydb.search(searchstring)
@@ -851,6 +862,7 @@ class MainWindow(QWidget):
 		self.update_preview_in_ModifyBox()
 
 	def update_preview_in_ModifyBox(self):
+		# print('sectionid:%d,questionid:%d' % (self.sectionid_selected_in_ModifyBox,self.questionid_in_ModifyBox))
 		if self.sectionid_selected_in_ModifyBox == 0 or self.questionid_in_ModifyBox == 0:
 			self.btn_next.setEnabled(False)
 			self.btn_previous.setEnabled(False)
@@ -1102,6 +1114,38 @@ class MainWindow(QWidget):
 			# self.add_proof_ui.update_preview()
 			self.add_proof_ui.show()
 
+	def btn_delete_clicked(self):
+		reply = QMessageBox.question(self, u'询问', u'确认删除当前题目？', QMessageBox.Yes, QMessageBox.No)
+		if reply == QMessageBox.Yes:
+			if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
+				deletestring = ('delete from schoice where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
+				deletestring = ('delete from mchoice where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
+				deletestring = ('delete from tof where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
+				deletestring = ('delete from blank where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
+				deletestring = ('delete from calculation where id = %d' % (self.questionid_in_ModifyBox))
+			if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
+				deletestring = ('delete from proof where id = %d' % (self.questionid_in_ModifyBox))
+			if mydb.insert(deletestring):
+				QMessageBox.about(self, '通知', '删除成功！')
+				index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
+				self.questionids_in_ModifyBox.remove(self.questionid_in_ModifyBox)
+				if len(self.questionids_in_ModifyBox) == 0:
+					self.questionid_in_ModifyBox = 0 # 如果删除后当前题目列表为空，则问题id清0
+				elif index == len(self.questionids_in_ModifyBox):
+					self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index - 1]
+				else:
+					self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index]
+				self.update_preview_in_ModifyBox()
+				self.update_preview_in_BrowseBox()
+				self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
+			else:
+				QMessageBox.about(self, '通知', '删除失败！')
+			
+			
 
 	# 更新预览
 	def update_preview_in_BrowseBox(self):
@@ -1220,11 +1264,17 @@ class MainWindow(QWidget):
 
 		self.webView_in_BrowseBox.setHtml(self.pageSourceHead+self.pageSourceContent+self.pageSourceFoot)
 
-	def refresh_prevew_in_BrowseBox(self):
+	def resize_preview_in_BrowseBox(self):
 		newwidth='width: '+ str(self.webView_in_BrowseBox.width()-5) +'px;'
 		self.pageSourceHead = re.sub(r'width: \d*px;', newwidth, self.pageSourceHead)
 		self.update_preview_in_BrowseBox()
 
+	def resize_preview_in_ModifyBox(self):
+		newwidth='width: '+ str(self.webView_in_ModifyBox.width()-5) +'px;'
+		self.pageSourceHead = re.sub(r'width: \d*px;', newwidth, self.pageSourceHead)
+		self.update_preview_in_ModifyBox()
+
 	# 调整窗口大小事件
 	def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
-		self.refresh_prevew_in_BrowseBox()
+		self.resize_preview_in_BrowseBox()
+		self.resize_preview_in_ModifyBox()
