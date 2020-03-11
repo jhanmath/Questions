@@ -16,7 +16,7 @@ from AddFillinBlanksWindow import *
 from AddCalculationWindow import *
 from AddProofWindow import *
 from SelectSectionsWindow import *
-import mylength as mylen
+import myfunctions as myfun
 
 class MainWindow(QWidget):
 	singal_sectionid = pyqtSignal(list)
@@ -402,6 +402,7 @@ class MainWindow(QWidget):
 		self.chk_randomchoice = QCheckBox('选择题选项乱序')
 		self.chk_white = QCheckBox('主观题后留空')
 		self.chk_follow = QCheckBox('解答紧跟题')
+		self.chk_distribute = QCheckBox('平均分配各节题目数量')
 		self.chk_easy = QCheckBox('简单')
 		self.chk_medium = QCheckBox('中等')
 		self.chk_hard = QCheckBox('困难')
@@ -429,6 +430,7 @@ class MainWindow(QWidget):
 		layout.addWidget(self.chk_white, 2, 3)
 		layout.addWidget(self.chk_random, 3, 3)
 		layout.addWidget(self.chk_randomchoice, 4, 3)
+		layout.addWidget(self.chk_distribute, 5, 3)
 		layout.addWidget(self.chk_easy, 0, 4)
 		layout.addWidget(self.chk_medium, 1, 4)
 		layout.addWidget(self.chk_hard, 2, 4)
@@ -507,7 +509,7 @@ class MainWindow(QWidget):
 		self.ed_calculate.setText(str(total_num_calculation))
 		self.ed_prove.setText(str(total_num_proof))
 
-	def transmit_settings(self, ui):
+	def transmit_settings(self, ui): # 将设置传递给打开的子窗口
 		ui.other_settings.connect(self.update_added_settings)
 		i = 0
 		while self.last_added_section_id != self.sections[i][0]:
@@ -622,14 +624,14 @@ class MainWindow(QWidget):
 			return
 		
 		try:
-			f = open('myquestions.tex', 'w', encoding='utf-8') # 若是'wb'就表示写二进制文件
+			f = open('myquestions.tex', 'w', encoding='utf-8')
 			# 写入单选题
 			if num_schoice>0:
 				f.writelines('\\section{单项选择题}\n')
 				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_schoice):
 					f.writelines('\t\\item %s\n' % (schoice[i][0]))
-					maxlen = max(mylen.mathlength(schoice[i][1]), mylen.mathlength(schoice[i][2]), mylen.mathlength(schoice[i][3]), mylen.mathlength(schoice[i][4]))
+					maxlen = max(myfun.mathlength(schoice[i][1]), myfun.mathlength(schoice[i][2]), myfun.mathlength(schoice[i][3]), myfun.mathlength(schoice[i][4]))
 					para = 4
 					if maxlen > 32:
 						para = 1
@@ -648,7 +650,7 @@ class MainWindow(QWidget):
 				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_mchoice):
 					f.writelines('\t\\item %s\n' % (mchoice[i][0]))
-					maxlen = max(mylen.mathlength(mchoice[i][1]), mylen.mathlength(mchoice[i][2]), mylen.mathlength(mchoice[i][3]), mylen.mathlength(mchoice[i][4]))
+					maxlen = max(myfun.mathlength(mchoice[i][1]), myfun.mathlength(mchoice[i][2]), myfun.mathlength(mchoice[i][3]), myfun.mathlength(mchoice[i][4]))
 					para = 4
 					if maxlen > 32:
 						para = 1
@@ -873,70 +875,20 @@ class MainWindow(QWidget):
 			return
 		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
 			searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice where id=%d' % (self.questionid_in_ModifyBox))
-			schoice = mydb.search(searchstring)
-			self.pageSourceContent = ('<p>' + schoice[0][0].replace(r'\\', '</br>').replace('\emptychoice','（&emsp;）') 
-										+ '</p><p>A. ' + schoice[0][1].replace(r'\\','</br>')
-										+ '</p><p>B. ' + schoice[0][2].replace(r'\\','</br>')
-										+ '</p><p>C. ' + schoice[0][3].replace(r'\\','</br>')
-										+ '</p><p>D. ' + schoice[0][4].replace(r'\\','</br>')
-										+ '</p><p>答案: ' + schoice[0][5]
-										+ '</p><p>解析： ' + schoice[0][6].replace(r'\\','</br>'))
-			self.question_data_in_ModifyBox = schoice
 		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
 			searchstring = ('select "question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source" from mchoice where id=%d' % (self.questionid_in_ModifyBox))
-			mchoice = mydb.search(searchstring)
-			answer = ''
-			answer_raw = mchoice[0][5:9]
-			for j in range(1, max(answer_raw)+1):
-				thisanswer = ''
-				for k in range(4):
-					if answer_raw[k] == j:
-						thisanswer = thisanswer + chr(k+65)
-				answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
-			self.pageSourceContent = ('<p>' + mchoice[0][0].replace(r'\\','</br>').replace('\emptychoice','（&emsp;）') 
-										+ '</p><p>A. ' + mchoice[0][1].replace(r'\\','</br>')
-										+ '</p><p>B. ' + mchoice[0][2].replace(r'\\','</br>')
-										+ '</p><p>C. ' + mchoice[0][3].replace(r'\\','</br>')
-										+ '</p><p>D. ' + mchoice[0][4].replace(r'\\','</br>')
-										+ '</p><p>答案： ' + answer
-										+ '</p><p>解析： ' + mchoice[0][9].replace(r'\\','</br>'))
-			self.question_data_in_ModifyBox = mchoice
 		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
 			searchstring = ('select "question", "correct", "explain", "section", "difficulty", "source" from tof where id=%d' % (self.questionid_in_ModifyBox))
-			tof = mydb.search(searchstring)
-			answertext = ['错误', '正确']
-			self.pageSourceContent = ('<p>' + tof[0][0].replace(r'\\','</br>')
-										+ '</p><p>答案： ' + answertext[tof[0][1]]
-										+ '</p><p>解析： ' + tof[0][2].replace(r'\\','</br>'))
-			self.question_data_in_ModifyBox = tof
 		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
 			searchstring = ('select "question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source" from blank where id=%d' % (self.questionid_in_ModifyBox))
-			blank = mydb.search(searchstring)
-			if blank[0][4] != '':
-				answer = '第1空：%s；第2空：%s；第3空：%s；第四空%s' % (blank[0][1].replace(r'\\','</br>'),blank[0][2].replace(r'\\','</br>'),blank[0][3].replace(r'\\','</br>'),blank[0][4].replace(r'\\','</br>'))
-			elif blank[0][3] != '':
-				answer = '第1空：%s；第2空：%s；第3空：%s' % (blank[0][1].replace(r'\\','</br>'),blank[0][2].replace(r'\\','</br>'),blank[0][3].replace(r'\\','</br>'))
-			elif blank[0][2] != '':
-				answer = '第1空：%s；第2空：%s' % (blank[0][1].replace(r'\\','</br>'),blank[0][2].replace(r'\\','</br>'))
-			else:
-				answer = '第1空：%s' % (blank[0][1].replace(r'\\','</br>'))
-			self.pageSourceContent = ('<p>' + blank[0][0].replace(r'\\','</br>').replace(r'\blank','<span style="text-decoration:underline">&emsp;&emsp;&emsp;&emsp;</span>') 
-										+ '</p><p>答案： ' + answer
-										+ '</p><p>解析： ' + blank[0][5].replace(r'\\','</br>'))
-			self.question_data_in_ModifyBox = blank
 		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
 			searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation where id=%d' % (self.questionid_in_ModifyBox))
-			calculation = mydb.search(searchstring)
-			self.pageSourceContent = ('<p>' + calculation[0][0].replace(r'\\','</br>')
-										+ '</p><p>解： ' + calculation[0][1].replace(r'\\','</br>'))
-			self.question_data_in_ModifyBox = calculation
 		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
 			searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof where id=%d' % (self.questionid_in_ModifyBox))
-			proof = mydb.search(searchstring)
-			self.pageSourceContent = ('<p>' + proof[0][0].replace(r'\\','</br>')
-										+ '</p><p>解： ' + proof[0][1].replace(r'\\','</br>'))
-			self.question_data_in_ModifyBox = proof
-
+		thisquestion = mydb.search(searchstring)
+		self.question_data_in_ModifyBox = [i for i in thisquestion[0]]
+		questionstring = myfun.format_question_to_html(self.question_data_in_ModifyBox, self.list_type_of_question_in_ModifyBox.currentText())
+		self.pageSourceContent = questionstring
 		self.webView_in_ModifyBox.setHtml(self.pageSourceHead+self.pageSourceContent+self.pageSourceFoot)
 		index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
 		self.btn_previous.setEnabled(index != 0)
@@ -960,34 +912,34 @@ class MainWindow(QWidget):
 	def btn_modify_clicked(self):
 		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
 			self.add_schoice_ui = AddSingleChoice()
-			self.add_schoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0][0].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[0][1].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[0][2].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[0][3].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[0][4].replace('\\\\\n','\n'))
-			if self.question_data_in_ModifyBox[0][5] == 'A':
+			self.add_schoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			if self.question_data_in_ModifyBox[5] == 'A':
 				self.add_schoice_ui.btn_A.setChecked(Ture)
 				self.add_schoice_ui.clickA()
-			elif self.question_data_in_ModifyBox[0][5] == 'B':
+			elif self.question_data_in_ModifyBox[5] == 'B':
 				self.add_schoice_ui.btn_B.setChecked(True)
 				self.add_schoice_ui.clickB()
-			elif self.question_data_in_ModifyBox[0][5] == 'C':
+			elif self.question_data_in_ModifyBox[5] == 'C':
 				self.add_schoice_ui.btn_C.setChecked(True)
 				self.add_schoice_ui.clickC()
-			elif self.question_data_in_ModifyBox[0][5] == 'D':
+			elif self.question_data_in_ModifyBox[5] == 'D':
 				self.add_schoice_ui.btn_D.setChecked(True)
 				self.add_schoice_ui.clickD()
-			self.add_schoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[0][6].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[6].replace('\\\\\n','\n'))
 			i = 0
-			while self.question_data_in_ModifyBox[0][7] != self.sections[i][0]:
+			while self.question_data_in_ModifyBox[7] != self.sections[i][0]:
 				i += 1
 			self.add_schoice_ui.list_section.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][8] != self.difficulties[i][0]:
+			while self.question_data_in_ModifyBox[8] != self.difficulties[i][0]:
 				i += 1
 			self.add_schoice_ui.list_difficulty.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][9] != self.sources[i][0]:
+			while self.question_data_in_ModifyBox[9] != self.sources[i][0]:
 				i += 1
 			self.add_schoice_ui.list_source.setCurrentIndex(i)
 			self.add_schoice_ui.other_settings.connect(self.update_after_modification)
@@ -997,26 +949,26 @@ class MainWindow(QWidget):
 			self.add_schoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
 			self.add_mchoice_ui = AddMultipleChoice()
-			self.add_mchoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0][0].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[0][1].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[0][2].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[0][3].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[0][4].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.btn_A.setCurrentIndex(self.question_data_in_ModifyBox[0][5])
-			self.add_mchoice_ui.btn_B.setCurrentIndex(self.question_data_in_ModifyBox[0][6])
-			self.add_mchoice_ui.btn_C.setCurrentIndex(self.question_data_in_ModifyBox[0][7])
-			self.add_mchoice_ui.btn_D.setCurrentIndex(self.question_data_in_ModifyBox[0][8])
-			self.add_mchoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[0][9].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.btn_A.setCurrentIndex(self.question_data_in_ModifyBox[5])
+			self.add_mchoice_ui.btn_B.setCurrentIndex(self.question_data_in_ModifyBox[6])
+			self.add_mchoice_ui.btn_C.setCurrentIndex(self.question_data_in_ModifyBox[7])
+			self.add_mchoice_ui.btn_D.setCurrentIndex(self.question_data_in_ModifyBox[8])
+			self.add_mchoice_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[9].replace('\\\\\n','\n'))
 			i = 0
-			while self.question_data_in_ModifyBox[0][10] != self.sections[i][0]:
+			while self.question_data_in_ModifyBox[10] != self.sections[i][0]:
 				i += 1
 			self.add_mchoice_ui.list_section.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][11] != self.difficulties[i][0]:
+			while self.question_data_in_ModifyBox[11] != self.difficulties[i][0]:
 				i += 1
 			self.add_mchoice_ui.list_difficulty.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][12] != self.sources[i][0]:
+			while self.question_data_in_ModifyBox[12] != self.sources[i][0]:
 				i += 1
 			self.add_mchoice_ui.list_source.setCurrentIndex(i)
 			self.add_mchoice_ui.other_settings.connect(self.update_after_modification)
@@ -1026,19 +978,19 @@ class MainWindow(QWidget):
 			self.add_mchoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
 			self.add_tof_ui = AddToF()
-			self.add_tof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0][0].replace('\\\\\n','\n'))
-			self.add_tof_ui.list_answer.setCurrentIndex(self.question_data_in_ModifyBox[0][1])
-			self.add_tof_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[0][2].replace('\\\\\n','\n'))
+			self.add_tof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_tof_ui.list_answer.setCurrentIndex(self.question_data_in_ModifyBox[1])
+			self.add_tof_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
 			i = 0
-			while self.question_data_in_ModifyBox[0][3] != self.sections[i][0]:
+			while self.question_data_in_ModifyBox[3] != self.sections[i][0]:
 				i += 1
 			self.add_tof_ui.list_section.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][4] != self.difficulties[i][0]:
+			while self.question_data_in_ModifyBox[4] != self.difficulties[i][0]:
 				i += 1
 			self.add_tof_ui.list_difficulty.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][5] != self.sources[i][0]:
+			while self.question_data_in_ModifyBox[5] != self.sources[i][0]:
 				i += 1
 			self.add_tof_ui.list_source.setCurrentIndex(i)
 			self.add_tof_ui.other_settings.connect(self.update_after_modification)
@@ -1048,22 +1000,22 @@ class MainWindow(QWidget):
 			self.add_tof_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
 			self.add_blank_ui = AddFillinBlanks()
-			self.add_blank_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0][0].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer1.setPlainText(self.question_data_in_ModifyBox[0][1].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer2.setPlainText(self.question_data_in_ModifyBox[0][2].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer3.setPlainText(self.question_data_in_ModifyBox[0][3].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer4.setPlainText(self.question_data_in_ModifyBox[0][4].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[0][5].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer1.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer2.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer3.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer4.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_explain.setPlainText(self.question_data_in_ModifyBox[5].replace('\\\\\n','\n'))
 			i = 0
-			while self.question_data_in_ModifyBox[0][6] != self.sections[i][0]:
+			while self.question_data_in_ModifyBox[6] != self.sections[i][0]:
 				i += 1
 			self.add_blank_ui.list_section.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][7] != self.difficulties[i][0]:
+			while self.question_data_in_ModifyBox[7] != self.difficulties[i][0]:
 				i += 1
 			self.add_blank_ui.list_difficulty.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][8] != self.sources[i][0]:
+			while self.question_data_in_ModifyBox[8] != self.sources[i][0]:
 				i += 1
 			self.add_blank_ui.list_source.setCurrentIndex(i)
 			self.add_blank_ui.other_settings.connect(self.update_after_modification)
@@ -1073,18 +1025,18 @@ class MainWindow(QWidget):
 			self.add_blank_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
 			self.add_calculation_ui = AddCalculation()
-			self.add_calculation_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0][0].replace('\\\\\n','\n'))
-			self.add_calculation_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[0][1].replace('\\\\\n','\n'))
+			self.add_calculation_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_calculation_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
 			i = 0
-			while self.question_data_in_ModifyBox[0][2] != self.sections[i][0]:
+			while self.question_data_in_ModifyBox[2] != self.sections[i][0]:
 				i += 1
 			self.add_calculation_ui.list_section.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][3] != self.difficulties[i][0]:
+			while self.question_data_in_ModifyBox[3] != self.difficulties[i][0]:
 				i += 1
 			self.add_calculation_ui.list_difficulty.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][4] != self.sources[i][0]:
+			while self.question_data_in_ModifyBox[4] != self.sources[i][0]:
 				i += 1
 			self.add_calculation_ui.list_source.setCurrentIndex(i)
 			self.add_calculation_ui.other_settings.connect(self.update_after_modification)
@@ -1094,18 +1046,18 @@ class MainWindow(QWidget):
 			self.add_calculation_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
 			self.add_proof_ui = AddProof()
-			self.add_proof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0][0].replace('\\\\\n','\n'))
-			self.add_proof_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[0][1].replace('\\\\\n','\n'))
+			self.add_proof_ui.input_question.setPlainText(self.question_data_in_ModifyBox[0].replace('\\\\\n','\n'))
+			self.add_proof_ui.input_answer.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
 			i = 0
-			while self.question_data_in_ModifyBox[0][2] != self.sections[i][0]:
+			while self.question_data_in_ModifyBox[2] != self.sections[i][0]:
 				i += 1
 			self.add_proof_ui.list_section.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][3] != self.difficulties[i][0]:
+			while self.question_data_in_ModifyBox[3] != self.difficulties[i][0]:
 				i += 1
 			self.add_proof_ui.list_difficulty.setCurrentIndex(i)
 			i = 0
-			while self.question_data_in_ModifyBox[0][4] != self.sources[i][0]:
+			while self.question_data_in_ModifyBox[4] != self.sources[i][0]:
 				i += 1
 			self.add_proof_ui.list_source.setCurrentIndex(i)
 			self.add_proof_ui.other_settings.connect(self.update_after_modification)
@@ -1144,8 +1096,6 @@ class MainWindow(QWidget):
 				self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
 			else:
 				QMessageBox.about(self, '通知', '删除失败！')
-			
-			
 
 	# 更新预览
 	def update_preview_in_BrowseBox(self):
@@ -1190,34 +1140,18 @@ class MainWindow(QWidget):
 			if num_schoice>0:
 				self.pageSourceContent += ('</p><h2>单选题</h2>')
 				for i in range(num_schoice):
-					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + schoice[i][0].replace(r'\\', '</br>').replace('\emptychoice','（&emsp;）') 
-												+ '</p><p>A. ' + schoice[i][1].replace(r'\\','</br>')
-												+ '</p><p>B. ' + schoice[i][2].replace(r'\\','</br>')
-												+ '</p><p>C. ' + schoice[i][3].replace(r'\\','</br>')
-												+ '</p><p>D. ' + schoice[i][4].replace(r'\\','</br>')
-												+ '</p><p>答案: ' + schoice[i][5]
-												+ '</p><p>解析： ' + schoice[i][6].replace(r'\\','</br>'))
+					thisquestion = [j for j in schoice[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '单选题', str(i+1))
+					self.pageSourceContent += questionstring
 
 		# 写入多选题
 		if self.chk_mchoice_in_BrowseBox.isChecked():
 			if num_mchoice>0:
 				self.pageSourceContent += ('</p><h2>多选题</h2>')
 				for i in range(num_mchoice):
-					answer = ''
-					answer_raw = mchoice[i][5:9]
-					for j in range(1, max(answer_raw)+1):
-						thisanswer = ''
-						for k in range(4):
-							if answer_raw[k] == j:
-								thisanswer = thisanswer + chr(k+65)
-						answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
-					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + mchoice[i][0].replace(r'\\','</br>').replace('\emptychoice','（&emsp;）') 
-												+ '</p><p>A. ' + mchoice[i][1].replace(r'\\','</br>')
-												+ '</p><p>B. ' + mchoice[i][2].replace(r'\\','</br>')
-												+ '</p><p>C. ' + mchoice[i][3].replace(r'\\','</br>')
-												+ '</p><p>D. ' + mchoice[i][4].replace(r'\\','</br>')
-												+ '</p><p>答案： ' + answer
-												+ '</p><p>解析： ' + mchoice[i][9].replace(r'\\','</br>'))
+					thisquestion = [j for j in mchoice[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '多选题', str(i+1))
+					self.pageSourceContent += questionstring
 
 		# 写入判断题
 		if self.chk_tof_in_BrowseBox.isChecked():
@@ -1225,42 +1159,36 @@ class MainWindow(QWidget):
 				self.pageSourceContent += ('</p><h2>判断题</h2>')
 				answertext = ['错误', '正确']
 				for i in range(num_tof):
-					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + tof[i][0].replace(r'\\','</br>')
-												+ '</p><p>答案： ' + answertext[tof[i][1]]
-												+ '</p><p>解析： ' + tof[i][2].replace(r'\\','</br>'))
+					thisquestion = [j for j in tof[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '判断题', str(i+1))
+					self.pageSourceContent += questionstring
 
 		# 写入填空题
 		if self.chk_blank_in_BrowseBox.isChecked():
 			if num_blank>0:
 				self.pageSourceContent += ('</p><h2>填空题</h2>')
 				for i in range(num_blank):
-					if blank[i][4] != '':
-						answer = '第1空：%s；第2空：%s；第3空：%s；第四空%s' % (blank[i][1].replace(r'\\','</br>'),blank[i][2].replace(r'\\','</br>'),blank[i][3].replace(r'\\','</br>'),blank[i][4].replace(r'\\','</br>'))
-					elif blank[i][3] != '':
-						answer = '第1空：%s；第2空：%s；第3空：%s' % (blank[i][1].replace(r'\\','</br>'),blank[i][2].replace(r'\\','</br>'),blank[i][3].replace(r'\\','</br>'))
-					elif blank[i][2] != '':
-						answer = '第1空：%s；第2空：%s' % (blank[i][1].replace(r'\\','</br>'),blank[i][2].replace(r'\\','</br>'))
-					else:
-						answer = '第1空：%s' % (blank[i][1].replace(r'\\','</br>'))
-					self.pageSourceContent += ('<p>' + str(i+1) + '.' + blank[i][0].replace(r'\\','</br>').replace(r'\blank','<span style="text-decoration:underline">&emsp;&emsp;&emsp;&emsp;</span>') 
-												+ '</p><p>答案： ' + answer
-												+ '</p><p>解析： ' + blank[i][5].replace(r'\\','</br>'))
+					thisquestion = [j for j in blank[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '填空题', str(i+1))
+					self.pageSourceContent += questionstring
 
 		# 写入计算题
 		if self.chk_calculation_in_BrowseBox.isChecked():
 			if num_calculation>0:
 				self.pageSourceContent += ('</p><h2>计算题</h2>')
 				for i in range(num_calculation):
-					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + calculation[i][0].replace(r'\\','</br>')
-										+ '</p><p>解： ' + calculation[i][1].replace(r'\\','</br>'))
+					thisquestion = [j for j in calculation[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '计算题', str(i+1))
+					self.pageSourceContent += questionstring
 
 		# 写入证明题
 		if self.chk_proof_in_BrowseBox.isChecked():
 			if num_proof>0:
 				self.pageSourceContent += ('</p><h2>证明题</h2>')
 				for i in range(num_proof):
-					self.pageSourceContent += ('<p>' + str(i+1) + '. ' + proof[i][0].replace(r'\\','</br>')
-										+ '</p><p>解： ' + proof[i][1].replace(r'\\','</br>'))
+					thisquestion = [j for j in proof[i]]
+					questionstring = myfun.format_question_to_html(thisquestion, '证明题', str(i+1))
+					self.pageSourceContent += questionstring
 
 		self.webView_in_BrowseBox.setHtml(self.pageSourceHead+self.pageSourceContent+self.pageSourceFoot)
 
