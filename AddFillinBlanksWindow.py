@@ -8,7 +8,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-import re
 import database as mydb
 import myfunctions as myfun
 
@@ -171,9 +170,9 @@ class AddFillinBlanks(QWidget):
         if num_blanks:
             for i in range(1, num_blanks+1):
                 answer = answer + '第'+str(i)+'空：' + self.answers[i-1].replace('\n','</br>') + '；' 
-        pageSourceContent = (self.input_question.toPlainText().strip().replace('\n','</br>').replace(r'\blank','<span style="text-decoration:underline">&emsp;&emsp;&emsp;&emsp;</span>') 
+        pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '填空题')
                                     + '</p><p>答案： ' + answer
-                                    + '</p><p>解析： ' + self.input_explain.toPlainText().strip().replace('\n','</br>'))
+                                    + '</p><p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()))
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def update_answer1(self):
@@ -217,7 +216,7 @@ class AddFillinBlanks(QWidget):
             if self.modification == 0:
                 columns = '("question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source")'
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
-                                    + self.format_question_string(self.input_question) + '", "'
+                                    + myfun.format_question_to_latex(self.input_question.toPlainText(), '填空题') + '", "'
                                     + self.answers[0].replace('\n','\\\\\n') + '", "'
                                     + self.answers[1].replace('\n','\\\\\n') + '", "'
                                     + self.answers[2].replace('\n','\\\\\n') + '", "'
@@ -235,7 +234,7 @@ class AddFillinBlanks(QWidget):
                     QMessageBox.about(self, u'错误', u'添加题目失败！')
             else:
                 updatestring = ('UPDATE ' + table + ' SET question="%s", answer1="%s", answer2="%s", answer3="%s", answer4="%s", explain="%s", section=%d, difficulty=%d, source = %d where id=%d;'
-                                % (self.format_question_string(self.input_question),
+                                % (myfun.format_question_to_latex(self.input_question.toPlainText(), '填空题'),
                                     self.answers[0].replace('\n','\\\\\n'),
                                     self.answers[1].replace('\n','\\\\\n'),
                                     self.answers[2].replace('\n','\\\\\n'),
@@ -252,16 +251,6 @@ class AddFillinBlanks(QWidget):
                         self.close()
                 else:
                     QMessageBox.about(self, u'错误', u'修改题目失败！')
-
-    def format_question_string(self, question): # 在命令后加空格，避免latex编译失败
-        text = question.toPlainText().strip().replace('\n','\\\\\n')
-        text = text.replace(r'\blank', r'\blank ')
-        text = text.replace(r'\blank  ', r'\blank ')
-        text = text.replace(r'\blank ,', r'\blank,')
-        text = text.replace(r'\blank .', r'\blank.')
-        text = text.replace(r'\blank 。', r'\blank。')
-        text = text.replace(r'\blank ，', r'\blank，')
-        return text
 
     # 调整窗口大小事件
     def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：

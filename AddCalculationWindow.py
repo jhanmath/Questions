@@ -8,7 +8,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-import re
 import database as mydb
 import myfunctions as myfun
 
@@ -140,8 +139,8 @@ class AddCalculation(QWidget):
 
     # 更新预览
     def update_preview(self):
-        pageSourceContent = (self.input_question.toPlainText().strip().replace('\n', '</br>')
-                                    + '</p><p>解： ' + self.answer.replace('\n', '</br>'))
+        pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '计算题')
+                                    + '</p><p>解： ' + myfun.format_subquestion_to_html(self.answer))
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def insert_question(self):
@@ -155,7 +154,7 @@ class AddCalculation(QWidget):
             if self.modification == 0:
                 columns = '("question", "answer", "section", "difficulty", "source")'
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
-                                    + self.input_question.toPlainText().strip().replace('\n', '\\\\\n') + '", "'
+                                    + myfun.format_question_to_latex(self.input_question.toPlainText(), '计算题') + '", "'
                                     + self.answer.replace('\n', '\\\\\n') + '", '
                                     + str(self.section_id) + ', '
                                     + str(self.difficulty_id) + ', '
@@ -169,7 +168,7 @@ class AddCalculation(QWidget):
                     QMessageBox.about(self, u'错误', u'添加题目失败！')
             else:
                 updatestring = ('UPDATE ' + table + ' SET question="%s", answer="%s", section=%d, difficulty=%d, source=%d where id=%d;'
-                                % (self.input_question.toPlainText().strip().replace('\n','\\\\\n'),
+                                % (myfun.format_question_to_latex(self.input_question.toPlainText(), '计算题'),
                                     self.answer.replace('\n', '\\\\\n'),
                                     self.section_id,
                                     self.difficulty_id,

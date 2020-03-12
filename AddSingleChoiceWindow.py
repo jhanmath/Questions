@@ -8,7 +8,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-import re
 import database as mydb
 import myfunctions as myfun
 
@@ -186,13 +185,13 @@ class AddSingleChoice(QWidget):
 
     # 更新预览
     def update_preview(self):
-        pageSourceContent = (self.input_question.toPlainText().strip().replace('\n','</br>').replace('\emptychoice','（&emsp;）') 
+        pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '单选题')
                                     + '</p><p>A. ' + self.input_answerA.toPlainText().strip().replace('\n','</br>')
                                     + '</p><p>B. ' + self.input_answerB.toPlainText().strip().replace('\n','</br>')
                                     + '</p><p>C. ' + self.input_answerC.toPlainText().strip().replace('\n','</br>')
                                     + '</p><p>D. ' + self.input_answerD.toPlainText().strip().replace('\n','</br>')
                                     + '</p><p>答案: ' + self.correct
-                                    + '</p><p>解析： ' + self.input_explain.toPlainText().strip().replace('\n','</br>'))
+                                    + '</p><p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()))
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def insert_question(self):
@@ -223,13 +222,13 @@ class AddSingleChoice(QWidget):
             if self.modification == 0:
                 columns = '("question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source")'
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
-                                    + self.format_question_string(self.input_question) + '", "'
+                                    + myfun.format_question_to_latex(self.input_question.toPlainText(), '单选题') + '", "'
                                     + self.input_answerA.toPlainText().strip().replace('\n','\\\\\n') + '", "'
                                     + self.input_answerB.toPlainText().strip().replace('\n','\\\\\n') + '", "'
                                     + self.input_answerC.toPlainText().strip().replace('\n','\\\\\n') + '", "'
                                     + self.input_answerD.toPlainText().strip().replace('\n','\\\\\n') + '", "'
                                     + self.correct + '", "'
-                                    + self.input_explain.toPlainText().strip().replace('\n','\\\\\n') + '", '
+                                    + myfun.format_subquestion_to_latex(self.input_explain.toPlainText()) + '", '
                                     + str(self.section_id) + ', '
                                     + str(self.difficulty_id) + ', '
                                     + str(self.source_id) + ');')
@@ -242,13 +241,13 @@ class AddSingleChoice(QWidget):
                     QMessageBox.about(self, u'错误', u'添加题目失败！')
             else:
                 updatestring = ('UPDATE ' + table + ' SET question="%s", A="%s", B="%s", C="%s", D="%s", answer=\'%s\', explain="%s", section=%d, difficulty=%d, source=%d where id=%d;'
-                                % (self.format_question_string(self.input_question),
+                                % (myfun.format_question_to_latex(self.input_question.toPlainText(), '单选题'),
                                     self.input_answerA.toPlainText().strip().replace('\n','\\\\\n'),
                                     self.input_answerB.toPlainText().strip().replace('\n','\\\\\n'),
                                     self.input_answerC.toPlainText().strip().replace('\n','\\\\\n'),
                                     self.input_answerD.toPlainText().strip().replace('\n','\\\\\n'),
                                     self.correct,
-                                    self.input_explain.toPlainText().strip().replace('\n','\\\\\n'),
+                                    myfun.format_subquestion_to_latex(self.input_explain.toPlainText()),
                                     self.section_id,
                                     self.difficulty_id,
                                     self.source_id,
@@ -260,16 +259,6 @@ class AddSingleChoice(QWidget):
                         self.close()
                 else:
                     QMessageBox.about(self, u'错误', u'修改题目失败！')
-
-    def format_question_string(self, question):
-        text = question.toPlainText().strip().replace('\n','\\\\\n')
-        text = text.replace(r'\emptychoice', r'\emptychoice ')
-        text = text.replace(r'\emptychoice  ', r'\emptychoice ')
-        text = text.replace(r'\emptychoice ,', r'\emptychoice,')
-        text = text.replace(r'\emptychoice .', r'\emptychoice.')
-        text = text.replace(r'\emptychoice 。', r'\emptychoice。')
-        text = text.replace(r'\emptychoice ，', r'\emptychoice，')
-        return text
 
     # 调整窗口大小事件
     def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：

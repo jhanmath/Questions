@@ -8,7 +8,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-import re
 import database as mydb
 import myfunctions as myfun
 
@@ -152,9 +151,9 @@ class AddToF(QWidget):
     # 更新预览
     def update_preview(self):
         answertext = ['错误', '正确']
-        pageSourceContent = (self.input_question.toPlainText().strip().replace('\n','</br>')
+        pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '判断题')
                                     + '</p><p>答案： ' + answertext[self.answer]
-                                    + '</p><p>解析： ' + self.input_explain.toPlainText().strip().replace('\n','</br>'))
+                                    + '</p><p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()))
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def insert_question(self):
@@ -168,7 +167,7 @@ class AddToF(QWidget):
             if self.modification == 0:
                 columns = '("question", "correct", "explain", "section", "difficulty", "source")'
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
-                                    + self.input_question.toPlainText().strip().replace('\n','\\\\\n') + '", "'
+                                    + myfun.format_question_to_latex(self.input_question.toPlainText(), '判断题') + '", "'
                                     + str(self.answer) + '", "'
                                     + self.input_explain.toPlainText().strip().replace('\n','\\\\\n') + '", '
                                     + str(self.section_id) + ', '
@@ -183,7 +182,7 @@ class AddToF(QWidget):
                     QMessageBox.about(self, u'错误', u'添加题目失败！')
             else:
                 updatestring = ('UPDATE ' + table + ' SET question="%s", correct=%d, explain="%s", section=%d, difficulty=%d, source=%d where id=%d;'
-                                % (self.input_question.toPlainText().strip().replace('\n','\\\\\n'),
+                                % (myfun.format_question_to_latex(self.input_question.toPlainText(), '判断题'),
                                     self.answer,
                                     self.input_explain.toPlainText().strip().replace('\n','\\\\\n'),
                                     self.section_id,

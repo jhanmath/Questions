@@ -31,17 +31,20 @@
 - 添加、修改、删除难度
 - 添加、修改、删除题目来源
 - 自由选择题目导出
-- 支持子问题\sub
+- 导出选项数量与实际数据相同
 
 #### Required Python packages
 - webbrowser, requests
-- PyQt5, PyQtWebEngine, datetime, sys, os, configparser, re
+- PyQt5, PyQtWebEngine, datetime, sys, os, configparser, regex
 
 #### 使用方法
 
 运行 questions.py
 
 #### 更新记录
+ver. 2020.03.12
+- 输入题干和计算题证明题解答、其余题型解析时支持用`\sub`表示子问题
+
 ver. 2020.03.11
 - 增加删除题目功能
 - 增加复制题目功能
