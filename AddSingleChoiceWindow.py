@@ -187,11 +187,13 @@ class AddSingleChoice(QWidget):
     def update_preview(self):
         pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '单选题')
                                     + '</p><p>A. ' + self.input_answerA.toPlainText().strip().replace('\n','</br>')
-                                    + '</p><p>B. ' + self.input_answerB.toPlainText().strip().replace('\n','</br>')
-                                    + '</p><p>C. ' + self.input_answerC.toPlainText().strip().replace('\n','</br>')
-                                    + '</p><p>D. ' + self.input_answerD.toPlainText().strip().replace('\n','</br>')
-                                    + '</p><p>答案: ' + self.correct
-                                    + '</p><p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()))
+                                    + '</p><p>B. ' + self.input_answerB.toPlainText().strip().replace('\n','</br>'))
+        if self.input_answerC.toPlainText().strip() != '':
+            pageSourceContent += ('</p><p>C. ' + self.input_answerC.toPlainText().strip().replace('\n','</br>'))
+        if self.input_answerD.toPlainText().strip() != '':
+            pageSourceContent += ('</p><p>D. ' + self.input_answerD.toPlainText().strip().replace('\n','</br>'))
+        pageSourceContent += ('</p><p>答案: ' + self.correct
+                                + '</p><p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()))
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def insert_question(self):
@@ -210,7 +212,7 @@ class AddSingleChoice(QWidget):
         elif ((self.correct == 'B' and self.input_answerB.toPlainText().strip() == '')
                 or (self.correct == 'C' and self.input_answerC.toPlainText().strip() == '')
                 or (self.correct == 'D' and self.input_answerD.toPlainText().strip() == '')):
-            QMessageBox.waraboutning(self, u'警告', u'正确选项不能为空！')
+            QMessageBox.about(self, u'警告', u'正确选项不能为空！')
         elif (self.input_answerB.toPlainText().strip() == '' or self.input_answerC.toPlainText().strip() == '' or self.input_answerD.toPlainText().strip() == ''):
             reply = QMessageBox.warning(self, u'警告', u'选项BCD没有全部填写，确定添加题目？', QMessageBox.Yes, QMessageBox.No)
             if reply == QMessageBox.Yes:

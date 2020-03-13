@@ -27,11 +27,13 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
     if question_type == '单选题':
         questionstring = ('<p>' + format_number + format_question_to_html(question[0], '单选题', fromdatabase)
                                     + '</p><p>A. ' + question[1].replace(r'\\','</br>')
-                                    + '</p><p>B. ' + question[2].replace(r'\\','</br>')
-                                    + '</p><p>C. ' + question[3].replace(r'\\','</br>')
-                                    + '</p><p>D. ' + question[4].replace(r'\\','</br>')
-                                    + '</p><p>答案: ' + question[5]
-                                    + '</p><p>解析： ' + format_subquestion_to_html(question[6], fromdatabase))
+                                    + '</p><p>B. ' + question[2].replace(r'\\','</br>'))
+        if question[3] != '':
+            questionstring += ('</p><p>C. ' + question[3].replace(r'\\','</br>'))
+        if question[4] != '':
+            questionstring += ('</p><p>D. ' + question[4].replace(r'\\','</br>'))
+        questionstring += ('</p><p>答案: ' + question[5]
+                           + '</p><p>解析： ' + format_subquestion_to_html(question[6], fromdatabase))
     elif question_type == '多选题':
         answer = ''
         answer_raw = question[5:9]
@@ -43,11 +45,13 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
             answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
         questionstring = ('<p>' + format_number + format_question_to_html(question[0], '多选题', fromdatabase)
                                     + '</p><p>A. ' + question[1].replace(r'\\','</br>')
-                                    + '</p><p>B. ' + question[2].replace(r'\\','</br>')
-                                    + '</p><p>C. ' + question[3].replace(r'\\','</br>')
-                                    + '</p><p>D. ' + question[4].replace(r'\\','</br>')
-                                    + '</p><p>答案： ' + answer
-                                    + '</p><p>解析： ' + format_subquestion_to_html(question[9], fromdatabase))
+                                    + '</p><p>B. ' + question[2].replace(r'\\','</br>'))
+        if question[3] != '':
+            questionstring += ('</p><p>C. ' + question[3].replace(r'\\','</br>'))
+        if question[4] != '':
+            questionstring += ('</p><p>D. ' + question[4].replace(r'\\','</br>'))
+        questionstring += ('</p><p>答案： ' + answer
+                            + '</p><p>解析： ' + format_subquestion_to_html(question[9], fromdatabase))
     elif question_type == '判断题':
         answertext = ['错误', '正确']
         questionstring = ('<p>' + format_number + format_question_to_html(question[0], '判断题', fromdatabase)

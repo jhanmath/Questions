@@ -315,6 +315,7 @@ class MainWindow(QWidget):
 		self.SectionsBox.setLayout(layout)
 
 	def createExportBox(self):
+		layout_number = QGridLayout()
 		self.lbl_schoice = QLabel('单选题数量：')
 		self.lbl_mchoice = QLabel('多选题数量：')
 		self.lbl_tof = QLabel('判断题数量：')
@@ -347,6 +348,20 @@ class MainWindow(QWidget):
 		self.ed_blank.setFixedWidth(100)
 		self.ed_calculate.setFixedWidth(100)
 		self.ed_prove.setFixedWidth(100)
+		layout_number.addWidget(self.lbl_schoice, 0, 0)
+		layout_number.addWidget(self.lbl_mchoice, 1, 0)
+		layout_number.addWidget(self.lbl_tof, 2, 0)
+		layout_number.addWidget(self.lbl_blank, 3, 0)
+		layout_number.addWidget(self.lbl_calculate, 4, 0)
+		layout_number.addWidget(self.lbl_prove, 5, 0)
+		layout_number.addWidget(self.ed_schoice, 0, 1)
+		layout_number.addWidget(self.ed_mchoice, 1, 1)
+		layout_number.addWidget(self.ed_tof, 2, 1)
+		layout_number.addWidget(self.ed_blank, 3, 1)
+		layout_number.addWidget(self.ed_calculate, 4, 1)
+		layout_number.addWidget(self.ed_prove, 5, 1)
+
+		layout_options = QGridLayout()
 		self.chk_solution = QCheckBox('包含解答')
 		self.chk_random = QCheckBox('打乱题目顺序')
 		self.chk_randomchoice = QCheckBox('选择题选项乱序')
@@ -354,41 +369,46 @@ class MainWindow(QWidget):
 		self.chk_follow = QCheckBox('解答跟随小题')
 		self.chk_distribute = QCheckBox('平均分配各节题目数量')
 		self.chk_easy = QCheckBox('简单')
+		self.chk_easy.setChecked(True)
 		self.chk_medium = QCheckBox('中等')
+		self.chk_medium.setChecked(True)
 		self.chk_hard = QCheckBox('困难')
+		self.chk_hard.setChecked(True)
 		self.chk_hell = QCheckBox('地狱')
-		self.btn_export = QPushButton('导出')
-		self.btn_export.clicked.connect(self.export_questions)
+		self.chk_hell.setChecked(True)
+		self.chk_save_id = QCheckBox('保存导出题目id')
+		self.chk_save_id.setToolTip('保存导出的题目id，可以在自由选题导出标签页读取')
+		layout_options.addWidget(self.chk_solution, 0, 0)
+		layout_options.addWidget(self.chk_follow, 1, 0)
+		layout_options.addWidget(self.chk_white, 2, 0)
+		layout_options.addWidget(self.chk_random, 3, 0)
+		layout_options.addWidget(self.chk_randomchoice, 4, 0)
+		layout_options.addWidget(self.chk_distribute, 4, 1)
+		layout_options.addWidget(self.chk_easy, 0, 1)
+		layout_options.addWidget(self.chk_medium, 1, 1)
+		layout_options.addWidget(self.chk_hard, 2, 1)
+		layout_options.addWidget(self.chk_hell, 3, 1)
+		layout_options.addWidget(self.chk_save_id, 0, 2)
+		layout_options.setHorizontalSpacing(10)
+
+		layout_btn = QHBoxLayout()
+		self.btn_export_to_latex = QPushButton('导出LaTeX')
+		self.btn_export_to_latex.clicked.connect(self.export_questions_to_latex)
 		self.btn_compile = QPushButton('导出并编译')
 		self.btn_compile.setEnabled(False)
+		self.btn_export_to_html = QPushButton('导出Html')
+		self.btn_export_to_html.clicked.connect(self.export_questions_to_html)
+		layout_btn.addWidget(self.btn_export_to_latex)
+		layout_btn.addWidget(self.btn_compile)
+		layout_btn.addWidget(self.btn_export_to_html)
+
+		# layout.addWidget(QLabel(' '), 0, 2)
+		# layout.addWidget(QLabel(' '), 0, 5)
 
 		layout = QGridLayout()
-		layout.addWidget(self.lbl_schoice, 0, 0)
-		layout.addWidget(self.lbl_mchoice, 1, 0)
-		layout.addWidget(self.lbl_tof, 2, 0)
-		layout.addWidget(self.lbl_blank, 3, 0)
-		layout.addWidget(self.lbl_calculate, 4, 0)
-		layout.addWidget(self.lbl_prove, 5, 0)
-		layout.addWidget(self.ed_schoice, 0, 1)
-		layout.addWidget(self.ed_mchoice, 1, 1)
-		layout.addWidget(self.ed_tof, 2, 1)
-		layout.addWidget(self.ed_blank, 3, 1)
-		layout.addWidget(self.ed_calculate, 4, 1)
-		layout.addWidget(self.ed_prove, 5, 1)
-		layout.addWidget(self.chk_solution, 0, 3)
-		layout.addWidget(self.chk_follow, 1, 3)
-		layout.addWidget(self.chk_white, 2, 3)
-		layout.addWidget(self.chk_random, 3, 3)
-		layout.addWidget(self.chk_randomchoice, 4, 3)
-		layout.addWidget(self.chk_distribute, 5, 3)
-		layout.addWidget(self.chk_easy, 0, 4)
-		layout.addWidget(self.chk_medium, 1, 4)
-		layout.addWidget(self.chk_hard, 2, 4)
-		layout.addWidget(self.chk_hell, 3, 4)
-		layout.addWidget(self.btn_export, 1, 6, 2, 1)
-		layout.addWidget(self.btn_compile, 3, 6, 2, 1)
-		layout.addWidget(QLabel(' '), 0, 2)
-		layout.addWidget(QLabel(' '), 0, 5)
+		layout.addLayout(layout_number, 0, 0, 2, 1)
+		layout.addLayout(layout_options, 0, 1)
+		layout.addLayout(layout_btn, 1, 1)
 		layout.setHorizontalSpacing(30)
 
 		self.ExportBox = QGroupBox('导出选项')
@@ -1120,7 +1140,7 @@ class MainWindow(QWidget):
 			i += 1
 		ui.list_source.setCurrentIndex(i)
 	
-	def export_questions(self):
+	def export_questions_to_latex(self):
 		if not self.selected_sectionids_in_ExportBox:
 			QMessageBox.about(self, u'通知', u'请先选择章节！')
 			return
@@ -1173,8 +1193,10 @@ class MainWindow(QWidget):
 					f.writelines('\t\t\\begin{choice}(%d)\n' % (para))
 					f.writelines('\t\t\t\\choice %s\n' % (schoice[i][1]))
 					f.writelines('\t\t\t\\choice %s\n' % (schoice[i][2]))
-					f.writelines('\t\t\t\\choice %s\n' % (schoice[i][3]))
-					f.writelines('\t\t\t\\choice %s\n' % (schoice[i][4]))
+					if schoice[i][3] != '':
+						f.writelines('\t\t\t\\choice %s\n' % (schoice[i][3]))
+					if schoice[i][4] != '':
+						f.writelines('\t\t\t\\choice %s\n' % (schoice[i][4]))
 					f.writelines('\t\t\\end{choice}\n')
 				f.writelines('\\end{enumerate}\n')
 			# 写入多选题
@@ -1192,8 +1214,10 @@ class MainWindow(QWidget):
 					f.writelines('\t\t\\begin{choice}(4)\n')
 					f.writelines('\t\t\t\\choice %s\n' % (mchoice[i][1]))
 					f.writelines('\t\t\t\\choice %s\n' % (mchoice[i][2]))
-					f.writelines('\t\t\t\\choice %s\n' % (mchoice[i][3]))
-					f.writelines('\t\t\t\\choice %s\n' % (mchoice[i][4]))
+					if schoice[i][3] != '':
+						f.writelines('\t\t\t\\choice %s\n' % (schoice[i][3]))
+					if schoice[i][4] != '':
+						f.writelines('\t\t\t\\choice %s\n' % (schoice[i][4]))
 					f.writelines('\t\t\\end{choice}\n')
 				f.writelines('\\end{enumerate}\n')
 			# 写入判断题
@@ -1320,6 +1344,9 @@ class MainWindow(QWidget):
 			print(e)
 			QMessageBox.about(self, u'错误', u'导出失败！')
 			return
+
+	def export_questions_to_html(self):
+		pass
 
 	# 调整窗口大小事件
 	def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：

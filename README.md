@@ -31,7 +31,7 @@
 - 添加、修改、删除难度
 - 添加、修改、删除题目来源
 - 自由选择题目导出
-- 导出选项数量与实际数据相同
+- 保存、读取导出题目id
 
 #### Required Python packages
 - webbrowser, requests
