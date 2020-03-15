@@ -23,7 +23,7 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.03.11'
+		self.ver = '2020.03.15'
 		self.selected_sectionids_in_ExportBox = [48, 49, 50, 51, 52, 53]
 		self.last_added_section_id = 1
 		self.last_added_difficulty_id = 1
