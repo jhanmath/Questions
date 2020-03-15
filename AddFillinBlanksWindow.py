@@ -109,13 +109,15 @@ class AddFillinBlanks(QWidget):
         mainlayout = QGridLayout()
         mainlayout.setSpacing(20)
         mainlayout.addWidget(question_box, 0, 0)
-        mainlayout.addWidget(preview_box, 0, 1, 2, 1)
+        mainlayout.addWidget(preview_box, 0, 1, 3, 1)
         mainlayout.addWidget(options_box, 1, 0)
-        mainlayout.addWidget(explain_box, 2, 0)
-        mainlayout.addWidget(others_box, 2, 1)
-        mainlayout.addWidget(self.btn_add, 3, 0, 1, 2)
+        mainlayout.addWidget(explain_box, 2, 0, 2, 1)
+        mainlayout.addWidget(others_box, 3, 1)
+        mainlayout.addWidget(self.btn_add, 4, 0, 1, 2)
         mainlayout.setColumnStretch(0, 1)
         mainlayout.setColumnStretch(1, 1)
+        mainlayout.setRowStretch(0, 1)
+        mainlayout.setRowStretch(2, 1)
         self.setLayout(mainlayout)
         self.webView.setHtml(myfun.gethtml(self.webView.width()))
         self.shortcut()
@@ -217,11 +219,11 @@ class AddFillinBlanks(QWidget):
                 columns = '("question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source")'
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
                                     + myfun.format_question_to_latex(self.input_question.toPlainText(), '填空题') + '", "'
-                                    + self.answers[0].replace('\n','\\\\\n') + '", "'
-                                    + self.answers[1].replace('\n','\\\\\n') + '", "'
-                                    + self.answers[2].replace('\n','\\\\\n') + '", "'
-                                    + self.answers[3].replace('\n','\\\\\n') + '", "'
-                                    + self.input_explain.toPlainText().strip().replace('\n',r'\\') + '", '
+                                    + myfun.format_enter_to_latex(self.answers[0]) + '", "'
+                                    + myfun.format_enter_to_latex(self.answers[1]) + '", "'
+                                    + myfun.format_enter_to_latex(self.answers[2]) + '", "'
+                                    + myfun.format_enter_to_latex(self.answers[3]) + '", "'
+                                    + myfun.format_explain_to_latex(self.input_explain.toPlainText()) + '", '
                                     + str(self.section_id) + ', '
                                     + str(self.difficulty_id) + ', '
                                     + str(self.source_id) + ');')
@@ -235,11 +237,11 @@ class AddFillinBlanks(QWidget):
             else:
                 updatestring = ('UPDATE ' + table + ' SET question="%s", answer1="%s", answer2="%s", answer3="%s", answer4="%s", explain="%s", section=%d, difficulty=%d, source = %d where id=%d;'
                                 % (myfun.format_question_to_latex(self.input_question.toPlainText(), '填空题'),
-                                    self.answers[0].replace('\n','\\\\\n'),
-                                    self.answers[1].replace('\n','\\\\\n'),
-                                    self.answers[2].replace('\n','\\\\\n'),
-                                    self.answers[3].replace('\n','\\\\\n'),
-                                    self.input_explain.toPlainText().strip().replace('\n','\\\\\n'),
+                                    myfun.format_enter_to_latex(self.answers[0]),
+                                    myfun.format_enter_to_latex(self.answers[1]),
+                                    myfun.format_enter_to_latex(self.answers[2]),
+                                    myfun.format_enter_to_latex(self.answers[3]),
+                                    myfun.format_explain_to_latex(self.input_explain.toPlainText()),
                                     self.section_id,
                                     self.difficulty_id,
                                     self.source_id,

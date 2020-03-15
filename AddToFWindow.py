@@ -169,7 +169,7 @@ class AddToF(QWidget):
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
                                     + myfun.format_question_to_latex(self.input_question.toPlainText(), '判断题') + '", "'
                                     + str(self.answer) + '", "'
-                                    + self.input_explain.toPlainText().strip().replace('\n','\\\\\n') + '", '
+                                    + myfun.format_enter_to_latex(self.input_explain.toPlainText()) + '", '
                                     + str(self.section_id) + ', '
                                     + str(self.difficulty_id) + ', '
                                     + str(self.source_id) + ');')
@@ -184,7 +184,7 @@ class AddToF(QWidget):
                 updatestring = ('UPDATE ' + table + ' SET question="%s", correct=%d, explain="%s", section=%d, difficulty=%d, source=%d where id=%d;'
                                 % (myfun.format_question_to_latex(self.input_question.toPlainText(), '判断题'),
                                     self.answer,
-                                    self.input_explain.toPlainText().strip().replace('\n','\\\\\n'),
+                                    myfun.format_enter_to_latex(self.input_explain.toPlainText()),
                                     self.section_id,
                                     self.difficulty_id,
                                     self.source_id,

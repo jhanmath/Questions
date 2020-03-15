@@ -125,13 +125,15 @@ class AddMultipleChoice(QWidget):
         mainlayout = QGridLayout()
         mainlayout.setSpacing(20)
         mainlayout.addWidget(question_box, 0, 0)
-        mainlayout.addWidget(preview_box, 0, 1, 2, 1)
+        mainlayout.addWidget(preview_box, 0, 1, 3, 1)
         mainlayout.addWidget(options_box, 1, 0)
-        mainlayout.addWidget(explain_box, 2, 0)
-        mainlayout.addWidget(others_box, 2, 1)
-        mainlayout.addWidget(self.btn_add, 3, 0, 1, 2)
+        mainlayout.addWidget(explain_box, 2, 0, 2, 1)
+        mainlayout.addWidget(others_box, 3, 1)
+        mainlayout.addWidget(self.btn_add, 4, 0, 1, 2)
         mainlayout.setColumnStretch(0, 1)
         mainlayout.setColumnStretch(1, 1)
+        mainlayout.setRowStretch(0, 1)
+        mainlayout.setRowStretch(2, 1)
         self.setLayout(mainlayout)
         self.webView.setHtml(myfun.gethtml(self.webView.width()))
         self.shortcut()
@@ -249,15 +251,15 @@ class AddMultipleChoice(QWidget):
                 columns = '("question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source")'
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
                                     + myfun.format_question_to_latex(self.input_question.toPlainText(), '多选题') + '", "'
-                                    + self.input_answerA.toPlainText().strip().replace('\n','\\\\\n') + '", "'
-                                    + self.input_answerB.toPlainText().strip().replace('\n','\\\\\n') + '", "'
-                                    + self.input_answerC.toPlainText().strip().replace('\n','\\\\\n') + '", "'
-                                    + self.input_answerD.toPlainText().strip().replace('\n','\\\\\n') + '", '
+                                    + myfun.format_enter_to_latex(self.input_answerA.toPlainText()) + '", "'
+                                    + myfun.format_enter_to_latex(self.input_answerB.toPlainText()) + '", "'
+                                    + myfun.format_enter_to_latex(self.input_answerC.toPlainText()) + '", "'
+                                    + myfun.format_enter_to_latex(self.input_answerD.toPlainText()) + '", '
                                     + str(self.pos[0]) + ', '
                                     + str(self.pos[1]) + ', '
                                     + str(self.pos[2]) + ', '
                                     + str(self.pos[3]) + ', "'
-                                    + self.input_explain.toPlainText().strip().replace('\n','\\\\\n') + '", '
+                                    + myfun.format_explain_to_latex(self.input_explain.toPlainText()) + '", '
                                     + str(self.section_id) + ', '
                                     + str(self.difficulty_id) + ', '
                                     + str(self.source_id) + ');')
@@ -271,15 +273,15 @@ class AddMultipleChoice(QWidget):
             else:
                 updatestring = ('UPDATE ' + table + ' SET question="%s", A="%s", B="%s", C="%s", D="%s", pos_A=%d, pos_B=%d, pos_C=%d, pos_D=%d, explain="%s", section=%d, difficulty=%d, source=%d where id=%d;'
                                 % (myfun.format_question_to_latex(self.input_question.toPlainText(), '多选题'),
-                                    self.input_answerA.toPlainText().strip().replace('\n','\\\\\n'),
-                                    self.input_answerB.toPlainText().strip().replace('\n','\\\\\n'),
-                                    self.input_answerC.toPlainText().strip().replace('\n','\\\\\n'),
-                                    self.input_answerD.toPlainText().strip().replace('\n','\\\\\n'),
+                                    myfun.format_enter_to_latex(self.input_answerA.toPlainText()),
+                                    myfun.format_enter_to_latex(self.input_answerB.toPlainText()),
+                                    myfun.format_enter_to_latex(self.input_answerC.toPlainText()),
+                                    myfun.format_enter_to_latex(self.input_answerD.toPlainText()),
                                     self.pos[0],
                                     self.pos[1],
                                     self.pos[2],
                                     self.pos[3],
-                                    self.input_explain.toPlainText().strip().replace('\n','\\\\\n'),
+                                    myfun.format_explain_to_latex(self.input_explain.toPlainText()),
                                     self.section_id,
                                     self.difficulty_id,
                                     self.source_id,

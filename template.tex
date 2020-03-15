@@ -4,7 +4,13 @@
 \usepackage{enumerate}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{physics}
+\usepackage{tikz,pgfplots} %绘图
+\usetikzlibrary{arrows,intersections}
+\usepgfplotslibrary{fillbetween}
+\usetikzlibrary{patterns}
 
+\pagestyle{plain}
 \ctexset{
 	section = {
 		name = {,、},
@@ -17,10 +23,10 @@ label = ({\Alph*}) ,
 label-width = 14pt
 ]{choice}[\choice]
 
-
 \newcommand{\emptychoice}{（\makebox[1cm]{}）}
 \newcommand{\blank}[1][3em]{\underline{\makebox[#1]{}}}
 \newcommand{\ds}{\displaystyle}
+\newcommand{\Prj}{\text{Prj}}
 
 \title{向量代数与空间解析几何作业}
 \date{}

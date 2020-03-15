@@ -113,13 +113,15 @@ class AddSingleChoice(QWidget):
         mainlayout = QGridLayout()
         mainlayout.setSpacing(20)
         mainlayout.addWidget(question_box, 0, 0)
-        mainlayout.addWidget(preview_box, 0, 1, 2, 1)
+        mainlayout.addWidget(preview_box, 0, 1, 3, 1)
         mainlayout.addWidget(options_box, 1, 0)
-        mainlayout.addWidget(explain_box, 2, 0)
-        mainlayout.addWidget(others_box, 2, 1)
-        mainlayout.addWidget(self.btn_add, 3, 0, 1, 2)
+        mainlayout.addWidget(explain_box, 2, 0, 2, 1)
+        mainlayout.addWidget(others_box, 3, 1)
+        mainlayout.addWidget(self.btn_add, 4, 0, 1, 2)
         mainlayout.setColumnStretch(0, 1)
         mainlayout.setColumnStretch(1, 1)
+        mainlayout.setRowStretch(0, 1)
+        mainlayout.setRowStretch(2, 1)
         self.setLayout(mainlayout)
         self.webView.setHtml(myfun.gethtml(self.webView.width()))
         self.shortcut()
@@ -225,12 +227,12 @@ class AddSingleChoice(QWidget):
                 columns = '("question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source")'
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
                                     + myfun.format_question_to_latex(self.input_question.toPlainText(), '单选题') + '", "'
-                                    + self.input_answerA.toPlainText().strip().replace('\n','\\\\\n') + '", "'
-                                    + self.input_answerB.toPlainText().strip().replace('\n','\\\\\n') + '", "'
-                                    + self.input_answerC.toPlainText().strip().replace('\n','\\\\\n') + '", "'
-                                    + self.input_answerD.toPlainText().strip().replace('\n','\\\\\n') + '", "'
+                                    + myfun.format_enter_to_latex(self.input_answerA.toPlainText()) + '", "'
+                                    + myfun.format_enter_to_latex(self.input_answerB.toPlainText()) + '", "'
+                                    + myfun.format_enter_to_latex(self.input_answerC.toPlainText()) + '", "'
+                                    + myfun.format_enter_to_latex(self.input_answerD.toPlainText()) + '", "'
                                     + self.correct + '", "'
-                                    + myfun.format_subquestion_to_latex(self.input_explain.toPlainText()) + '", '
+                                    + myfun.format_explain_to_latex(self.input_explain.toPlainText()) + '", '
                                     + str(self.section_id) + ', '
                                     + str(self.difficulty_id) + ', '
                                     + str(self.source_id) + ');')
@@ -244,12 +246,12 @@ class AddSingleChoice(QWidget):
             else:
                 updatestring = ('UPDATE ' + table + ' SET question="%s", A="%s", B="%s", C="%s", D="%s", answer=\'%s\', explain="%s", section=%d, difficulty=%d, source=%d where id=%d;'
                                 % (myfun.format_question_to_latex(self.input_question.toPlainText(), '单选题'),
-                                    self.input_answerA.toPlainText().strip().replace('\n','\\\\\n'),
-                                    self.input_answerB.toPlainText().strip().replace('\n','\\\\\n'),
-                                    self.input_answerC.toPlainText().strip().replace('\n','\\\\\n'),
-                                    self.input_answerD.toPlainText().strip().replace('\n','\\\\\n'),
-                                    self.correct,
-                                    myfun.format_subquestion_to_latex(self.input_explain.toPlainText()),
+                                    + myfun.format_enter_to_latex(self.input_answerA.toPlainText()),
+                                    + myfun.format_enter_to_latex(self.input_answerB.toPlainText()),
+                                    + myfun.format_enter_to_latex(self.input_answerC.toPlainText()),
+                                    + myfun.format_enter_to_latex(self.input_answerD.toPlainText()),
+                                    + self.correct,
+                                    + myfun.format_explain_to_latex(self.input_explain.toPlainText()),
                                     self.section_id,
                                     self.difficulty_id,
                                     self.source_id,

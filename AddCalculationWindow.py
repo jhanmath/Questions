@@ -155,7 +155,7 @@ class AddCalculation(QWidget):
                 columns = '("question", "answer", "section", "difficulty", "source")'
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
                                     + myfun.format_question_to_latex(self.input_question.toPlainText(), '计算题') + '", "'
-                                    + self.answer.replace('\n', '\\\\\n') + '", '
+                                    + myfun.format_explain_to_latex(self.answer) + '", '
                                     + str(self.section_id) + ', '
                                     + str(self.difficulty_id) + ', '
                                     + str(self.source_id) + ');')
@@ -169,7 +169,7 @@ class AddCalculation(QWidget):
             else:
                 updatestring = ('UPDATE ' + table + ' SET question="%s", answer="%s", section=%d, difficulty=%d, source=%d where id=%d;'
                                 % (myfun.format_question_to_latex(self.input_question.toPlainText(), '计算题'),
-                                    self.answer.replace('\n', '\\\\\n'),
+                                    myfun.format_explain_to_latex(self.answer),
                                     self.section_id,
                                     self.difficulty_id,
                                     self.source_id,

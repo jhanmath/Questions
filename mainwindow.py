@@ -363,10 +363,12 @@ class MainWindow(QWidget):
 
 		layout_options = QGridLayout()
 		self.chk_solution = QCheckBox('包含解答')
+		self.chk_solution.setChecked(True)
 		self.chk_random = QCheckBox('打乱题目顺序')
 		self.chk_randomchoice = QCheckBox('选择题选项乱序')
 		self.chk_white = QCheckBox('主观题后留空')
 		self.chk_follow = QCheckBox('解答跟随小题')
+		self.chk_follow.setChecked(True)
 		self.chk_distribute = QCheckBox('平均分配各节题目数量')
 		self.chk_easy = QCheckBox('简单')
 		self.chk_easy.setChecked(True)
@@ -472,7 +474,7 @@ class MainWindow(QWidget):
 			self.add_schoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
 			self.add_schoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
 			if self.question_data_in_ModifyBox[5] == 'A':
-				self.add_schoice_ui.btn_A.setChecked(Ture)
+				self.add_schoice_ui.btn_A.setChecked(True)
 				self.add_schoice_ui.clickA()
 			elif self.question_data_in_ModifyBox[5] == 'B':
 				self.add_schoice_ui.btn_B.setChecked(True)
@@ -660,7 +662,7 @@ class MainWindow(QWidget):
 			self.add_schoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
 			self.add_schoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
 			if self.question_data_in_ModifyBox[5] == 'A':
-				self.add_schoice_ui.btn_A.setChecked(Ture)
+				self.add_schoice_ui.btn_A.setChecked(True)
 				self.add_schoice_ui.clickA()
 			elif self.question_data_in_ModifyBox[5] == 'B':
 				self.add_schoice_ui.btn_B.setChecked(True)
@@ -1183,160 +1185,129 @@ class MainWindow(QWidget):
 				f.writelines('\\section{单项选择题}\n')
 				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_schoice):
-					f.writelines('\t\\item %s\n' % (schoice[i][0]))
-					maxlen = max(myfun.mathlength(schoice[i][1]), myfun.mathlength(schoice[i][2]), myfun.mathlength(schoice[i][3]), myfun.mathlength(schoice[i][4]))
-					para = 4
-					if maxlen > 32:
-						para = 1
-					elif maxlen > 14:
-						para = 2
-					f.writelines('\t\t\\begin{choice}(%d)\n' % (para))
-					f.writelines('\t\t\t\\choice %s\n' % (schoice[i][1]))
-					f.writelines('\t\t\t\\choice %s\n' % (schoice[i][2]))
-					if schoice[i][3] != '':
-						f.writelines('\t\t\t\\choice %s\n' % (schoice[i][3]))
-					if schoice[i][4] != '':
-						f.writelines('\t\t\t\\choice %s\n' % (schoice[i][4]))
-					f.writelines('\t\t\\end{choice}\n')
+					f.writelines('\t\\item ')
+					self.write_schoice_question(f, schoice[i])
+					if self.chk_follow.isChecked():
+						f.writelines('\t\t答案：')
+						self.write_schoice_solution(f, schoice[i])
 				f.writelines('\\end{enumerate}\n')
 			# 写入多选题
 			if num_mchoice>0:
 				f.writelines('\\section{多项选择题}\n')
 				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_mchoice):
-					f.writelines('\t\\item %s\n' % (mchoice[i][0]))
-					maxlen = max(myfun.mathlength(mchoice[i][1]), myfun.mathlength(mchoice[i][2]), myfun.mathlength(mchoice[i][3]), myfun.mathlength(mchoice[i][4]))
-					para = 4
-					if maxlen > 32:
-						para = 1
-					elif maxlen > 14:
-						para = 2
-					f.writelines('\t\t\\begin{choice}(4)\n')
-					f.writelines('\t\t\t\\choice %s\n' % (mchoice[i][1]))
-					f.writelines('\t\t\t\\choice %s\n' % (mchoice[i][2]))
-					if schoice[i][3] != '':
-						f.writelines('\t\t\t\\choice %s\n' % (schoice[i][3]))
-					if schoice[i][4] != '':
-						f.writelines('\t\t\t\\choice %s\n' % (schoice[i][4]))
-					f.writelines('\t\t\\end{choice}\n')
+					f.writelines('\t\\item ')
+					self.write_schoice_question(f, mchoice[i])
+					if self.chk_follow.isChecked():
+						f.writelines('\t\t答案：')
+						self.write_mchoice_solution(f, mchoice[i])
 				f.writelines('\\end{enumerate}\n')
 			# 写入判断题
 			if num_tof>0:
 				f.writelines('\\section{判断题}\n')
 				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_tof):
-					f.writelines('\t\\item %s \\hfill\\emptychoice \n' % (tof[i][0]))
+					f.writelines('\t\\item ')
+					self.write_tof_question(f, tof[i])
+					if self.chk_follow.isChecked():
+						f.writelines('\t\t答案：')
+						self.write_tof_solution(f, tof[i])
 				f.writelines('\\end{enumerate}\n')
 			# 写入填空题
 			if num_blank>0:
 				f.writelines('\\section{填空题}\n')
 				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_blank):
-					f.writelines('\t\\item %s\n' % (blank[i][0]))
+					f.writelines('\t\\item ')
+					self.write_blank_question(f, blank[i])
+					if self.chk_follow.isChecked():
+						if blank[i][0][-1] != '}':
+							f.writelines('\\\\')
+						f.writelines('\n\t\t答案：')
+						self.write_blank_solution(f, blank[i])
+					else:
+						f.writelines('\n')
 				f.writelines('\\end{enumerate}\n')
 			# 写入计算题
 			if num_calculation>0:
 				f.writelines('\\section{计算题}\n')
 				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_calculation):
-					f.writelines('\t\\item %s\n' % (calculation[i][0]))
+					f.writelines('\t\\item ')
+					self.write_calculation_question(f, calculation[i])
+					if self.chk_follow.isChecked():
+						if calculation[i][0][-1] != '}':
+							f.writelines('\\\\')
+						f.writelines('\n')
+						self.write_calculation_soltuion(f, calculation[i])
+					else:
+						f.writelines('\n')
 				f.writelines('\\end{enumerate}\n')
 			# 写入证明题
 			if num_proof>0:
 				f.writelines('\\section{证明题}\n')
 				f.writelines('\\begin{enumerate}\n')
 				for i in range(num_proof):
-					f.writelines('\t\\item %s\n' % (proof[i][0]))
+					f.writelines('\t\\item ')
+					self.write_proof_question(f, proof[i])
+					if self.chk_follow.isChecked():
+						if proof[i][0][-1] != '}':
+							f.writelines('\\\\')
+						f.writelines('\n')
+						self.write_proof_soltuion(f, proof[i])
+					else:
+						f.writelines('\n')
 				f.writelines('\\end{enumerate}\n')
 
 			# 写入解答
-			if self.chk_solution.isChecked():
+			if self.chk_solution.isChecked() and (not self.chk_follow.isChecked()):
 				# 单选题解答
 				if num_schoice>0:
 					f.writelines('\\section{单项选择题解答}\n')
 					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_schoice):
-						if schoice[i][6] != '':
-							f.writelines('\t\\item %s\\\\\n' % (schoice[i][5]))
-							f.writelines('\t\t解析：%s\n' % (schoice[i][6]))
-						else:
-							f.writelines('\t\\item %s\n' % (schoice[i][5]))
+						f.writelines('\t\\item ')
+						self.write_schoice_solution(f, schoice[i])
 					f.writelines('\\end{enumerate}\n')
 				# 多选题解答
 				if num_mchoice>0:
 					f.writelines('\\section{多项选择题解答}\n')
 					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_mchoice):
-						answer = ''
-						answer_raw = mchoice[i][5:9]
-						for j in range(1, max(answer_raw)+1):
-							thisanswer = ''
-							for k in range(4):
-								if answer_raw[k] == j:
-									thisanswer = thisanswer + chr(k+65)
-							answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
-						if mchoice[i][9] != '':
-							f.writelines('\t\\item %s\\\\\n' % (answer))
-							f.writelines('\t\t解析：%s\n' % (mchoice[i][9]))
-						else:
-							f.writelines('\t\\item %s\n' % (answer))
+						f.writelines('\t\\item ')
+						self.write_schoice_solution(f, mchoice[i])
 					f.writelines('\\end{enumerate}\n')
 				# 判断题解答
 				if num_tof>0:
 					f.writelines('\\section{判断题解答}\n')
 					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_tof):
-						answer = ['错误', '正确']
-						if tof[i][2] != '':
-							f.writelines('\t\\item %s\\\\\n' % (answer(tof[i][1])))
-							f.writelines('\t\t解析：%s\n' % (tof[i][2]))
-						else:
-							f.writelines('\t\\item %s\n' % (answer(tof[i][1])))
+						f.writelines('\t\\item ')
+						self.write_tof_solution(f, tof[i])
 					f.writelines('\\end{enumerate}\n')
 				# 填空题解答
 				if num_blank>0:
 					f.writelines('\\section{填空题解答}\n')
 					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_blank):
-						if blank[i][5] != '':
-							if blank[i][4] != '':
-								f.writelines('\t\\item %s；%s；%s；%s\\\\\n' % (blank[i][1],blank[i][2],blank[i][3],blank[i][4]))
-							elif blank[i][3] != '':
-								f.writelines('\t\\item %s；%s；%s\\\\\n' % (blank[i][1],blank[i][2],blank[i][3]))
-							elif blank[i][2] != '':
-								f.writelines('\t\\item %s；%s\\\\\n' % (blank[i][1],blank[i][2]))
-							else:
-								f.writelines('\t\\item %s\\\\\n' % (blank[i][1]))
-							f.writelines('\t\t解析：%s\n' % (blank[i][5]))
-						else:
-							if blank[i][4] != '':
-								f.writelines('\t\\item %s；%s；%s；%s\n' % (blank[i][1],blank[i][2],blank[i][3],blank[i][4]))
-							elif blank[i][3] != '':
-								f.writelines('\t\\item %s；%s；%s\n' % (blank[i][1],blank[i][2],blank[i][3]))
-							elif blank[i][2] != '':
-								f.writelines('\t\\item %s；%s\n' % (blank[i][1],blank[i][2]))
-							else:
-								f.writelines('\t\\item %s\n' % (blank[i][1]))
+						f.writelines('\t\\item ')
+						self.write_blank_solution(f, blank[i])
 					f.writelines('\\end{enumerate}\n')
 				# 计算题解答
 				if num_calculation>0:
 					f.writelines('\\section{计算题解答}\n')
 					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_calculation):
-						if calculation[i][1] == '':
-							f.writelines('\t\\item 解：略\n')
-						else:
-							f.writelines('\t\\item 解：%s\n' % (calculation[i][1]))
+						f.writelines('\t\\item ')
+						self.write_calculation_soltuion(f, calculation[i])
 					f.writelines('\\end{enumerate}\n')
 				# 证明题解答
 				if num_proof>0:
-					f.writelines('\\section{计算题解答}\n')
+					f.writelines('\\section{证明题解答}\n')
 					f.writelines('\\begin{enumerate}\n')
 					for i in range(num_proof):
-						if proof[i][1] != '':
-							f.writelines('\t\\item 证明：%s\n' % (proof[i][1]))
-						else:
-							f.writelines('\t\\item 证明：略\n')
+						f.writelines('\t\\item ')
+						self.write_proof_soltuion(f, proof[i])
 					f.writelines('\\end{enumerate}\n')
 			f.close()
 			QMessageBox.about(self, u'通知', u'导出成功！')
@@ -1352,3 +1323,105 @@ class MainWindow(QWidget):
 	def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
 		self.update_preview_in_BrowseBox()
 		self.update_preview_in_ModifyBox()
+
+	def write_schoice_question(self, f, schoice):
+		f.writelines('%s\n' % (schoice[0]))
+		maxlen = max(myfun.mathlength(schoice[1]), myfun.mathlength(schoice[2]), myfun.mathlength(schoice[3]), myfun.mathlength(schoice[4]))
+		para = 4
+		if maxlen > 30:
+			para = 1
+		elif maxlen > 12:
+			para = 2
+		f.writelines('\t\t\\begin{choice}(%d)\n' % (para))
+		f.writelines('\t\t\t\\choice %s\n' % (schoice[1]))
+		f.writelines('\t\t\t\\choice %s\n' % (schoice[2]))
+		if schoice[3] != '':
+			f.writelines('\t\t\t\\choice %s\n' % (schoice[3]))
+		if schoice[4] != '':
+			f.writelines('\t\t\t\\choice %s\n' % (schoice[4]))
+		f.writelines('\t\t\\end{choice}\n')
+
+	def write_schoice_solution(self, f, schoice):
+		if schoice[6] != '':
+			f.writelines('%s\\\\\n' % (schoice[5]))
+			f.writelines('\t\t解析：%s\n' % (schoice[6]))
+		else:
+			f.writelines('\%s\n' % (schoice[5]))
+
+	def write_mchoice_question(self, f, mchoice):
+		f.writelines('%s\n' % (mchoice[0]))
+		maxlen = max(myfun.mathlength(mchoice[1]), myfun.mathlength(mchoice[2]), myfun.mathlength(mchoice[3]), myfun.mathlength(mchoice[4]))
+		para = 4
+		if maxlen > 30:
+			para = 1
+		elif maxlen > 12:
+			para = 2
+		f.writelines('\t\t\\begin{choice}(4)\n')
+		f.writelines('\t\t\t\\choice %s\n' % (mchoice[1]))
+		f.writelines('\t\t\t\\choice %s\n' % (mchoice[2]))
+		if schoice[i][3] != '':
+			f.writelines('\t\t\t\\choice %s\n' % (schoice[i][3]))
+		if schoice[i][4] != '':
+			f.writelines('\t\t\t\\choice %s\n' % (schoice[i][4]))
+		f.writelines('\t\t\\end{choice}\n')
+
+	def write_mchoice_solution(self, f, mchoice):
+		answer = ''
+		answer_raw = mchoice[5:9]
+		for j in range(1, max(answer_raw)+1):
+			thisanswer = ''
+			for k in range(4):
+				if answer_raw[k] == j:
+					thisanswer = thisanswer + chr(k+65)
+			answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
+		if mchoice[9] != '':
+			f.writelines('%s\\\\\n' % (answer))
+			f.writelines('\t\t解析：%s\n' % (mchoice[9]))
+		else:
+			f.writelines('%s\n' % (answer))
+
+	def write_tof_question(self, f, tof):
+		f.writelines('%s \\hfill\\emptychoice\n' % (tof[0]))
+
+	def write_tof_solution(self, f, tof):
+		answer = ['错误', '正确']
+		if tof[2] != '':
+			f.writelines('%s\\\\\n' % (answer(tof[1])))
+			f.writelines('\t\t解析：%s\n' % (tof[2]))
+		else:
+			f.writelines('%s\n' % (answer(tof[1])))
+
+	def write_blank_question(self, f, blank):
+		f.writelines('%s' % (blank[0]))
+
+	def write_blank_solution(self, f, blank):
+		if blank[4] != '':
+			f.writelines('第1空：\\underline{%s}；第2空：\\underline{%s}；第3空：\\underline{%s}；第4空：\\underline{%s}' % (blank[1],blank[2],blank[3],blank[4]))
+		elif blank[3] != '':
+			f.writelines('第1空：\\underline{%s}；第2空：\\underline{%s}；第3空：\\underline{%s}' % (blank[1],blank[2],blank[3]))
+		elif blank[2] != '':
+			f.writelines('第1空：\\underline{%s}；第2空：\\underline{%s}' % (blank[1],blank[2]))
+		else:
+			f.writelines('\\underline{%s}' % (blank[1]))
+		if blank[5] != '':
+			f.writelines('\\\\\n\t\t解析：%s\n' % (blank[5]))
+		else:
+			f.writelines('\n')
+
+	def write_calculation_question(self, f, calculation):
+		f.writelines('%s' % (calculation[0]))
+
+	def write_calculation_soltuion(self, f, calculation):
+		if calculation[1] == '':
+			f.writelines('解：略\n')
+		else:
+			f.writelines('解：%s\n' % (calculation[1]))
+
+	def write_proof_question(self, f, proof):
+		f.writelines('%s' % (proof[0]))
+
+	def write_proof_soltuion(self, f, proof):
+		if proof[1] != '':
+			f.writelines('证明：%s\n' % (proof[1]))
+		else:
+			f.writelines('证明：略\n')
