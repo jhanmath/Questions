@@ -51,7 +51,38 @@ def insert(insertstring):
 dbpath = QDir.currentPath() + r'/db/questions.db'
 print(dbpath)
 
-# database = QSqlDatabase.addDatabase('QSQLITE')
-# database.setDatabaseName('./db/questions.db')
-# database.open()
+def get_schoice_by_id(id):
+    searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice where id=' + str(id))
+    searchresult = search(searchstring)
+    schoice = [i for i in searchresult[0]]
+    return schoice
 
+def get_mchoice_by_id(id):
+    searchstring = ('select "question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source" from mchoice where id=' + str(id))
+    searchresult = search(searchstring)
+    mchoice = [i for i in searchresult[0]]
+    return mchoice
+
+def get_tof_by_id(id):
+    searchstring = ('select "question", "correct", "explain", "section", "difficulty", "source" from tof where id=' + str(id))
+    searchresult = search(searchstring)
+    tof = [i for i in searchresult[0]]
+    return tof
+
+def get_blank_by_id(id):
+    searchstring = ('select "question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source" from blank where id=' + str(id))
+    searchresult = search(searchstring)
+    blank = [i for i in searchresult[0]]
+    return blank
+
+def get_calculation_by_id(id):
+    searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation where id=' + str(id))
+    searchresult = search(searchstring)
+    calculation = [i for i in searchresult[0]]
+    return calculation
+
+def get_proof_by_id(id):
+    searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof where id=' + str(id))
+    searchresult = search(searchstring)
+    proof = [i for i in searchresult[0]]
+    return proof
