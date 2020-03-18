@@ -198,8 +198,8 @@ def format_blank_to_html(question, question_type): # 格式化字符串中的空
         for i in range(len(keepstring)):
             newtext += (keepstring[i] + text_splited[i+1])
     elif question_type == '填空题':
-        delimiter = r'"\\blank"|"\\blank\[\d+em\]"'
-        pattern = r'\\blank\[(\d+)em\]'
+        delimiter = r'"\\blank"|"\\blank\{\d+\}"'
+        pattern = r'\\blank\{(\d+)\}'
         text_splited = regex.split(delimiter, question)
         keepstring = regex.findall(delimiter, question)
         for i in range(len(text_splited)):
@@ -210,7 +210,7 @@ def format_blank_to_html(question, question_type): # 格式化字符串中的空
                 for k in range(int(j)):
                     blank += '&emsp;'
                 blank += '</span>'
-                s = s.replace(r'\blank[' + j + 'em]', blank)
+                s = s.replace(r'\blank{' + j + '}', blank)
             s = s.replace(r'\blank', '<span style="text-decoration:underline">&emsp;&emsp;&emsp;</span>')
             text_splited[i] = s
         newtext = text_splited[0]

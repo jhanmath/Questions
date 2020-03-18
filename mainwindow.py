@@ -26,7 +26,7 @@ class MainWindow(QWidget):
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
 		self.ver = '2020.03.16'
-		self.selected_sectionids_in_ExportBox = [48, 49, 50, 51, 52, 53]
+		self.selected_sectionids_in_ExportBox = [54,55,56,57]
 		self.last_added_section_id = 1
 		self.last_added_difficulty_id = 1
 		self.last_added_source_id = 1
@@ -48,7 +48,8 @@ class MainWindow(QWidget):
 		self.tabs.addTab(self.tab_export_by_question, '自由选题导出')
 		self.tab_informationUI()
 		self.tab_modificationUI()
-		self.tab_exportUI()
+		self.tab_export_by_sectionUI()
+		self.tab_export_by_questionUI()
 		mainlayout.addWidget(self.tabs)
 
 		layout_about = QHBoxLayout()
@@ -89,13 +90,22 @@ class MainWindow(QWidget):
 		layout.addWidget(self.ModifyQuestionBox)
 		self.tab_modification.setLayout(layout)
 
-	def tab_exportUI(self):
+	def tab_export_by_sectionUI(self):
 		layout = QVBoxLayout()
 		self.createSectionsBox()
 		layout.addWidget(self.SectionsBox)
-		self.createExportBox()
-		layout.addWidget(self.ExportBox)
+		self.createExportOptionsBox()
+		layout.addWidget(self.ExportOptionsBox)
 		self.tab_export_by_section.setLayout(layout)
+
+	def tab_export_by_questionUI(self):
+		layout = QVBoxLayout()
+		self.createSelectedNumBox()
+		layout.addWidget(self.SelectedNumBox)
+		self.createSelectQuestionBox()
+		layout.addWidget(self.SelectQuestionBox)
+		self.tab_export_by_question.setLayout(layout)
+		self.update_selectedNum()
 
 	def createDBDisplayBox(self):
 		self.DBDisplayBox = QGroupBox('当前题库')
@@ -140,7 +150,6 @@ class MainWindow(QWidget):
 		self.tree_sections.setMaximumWidth(500)
 		self.tree_sections.setSelectionMode(QAbstractItemView.MultiSelection)
 		self.tree_sections.setHeaderLabels(['选择章节(可多选)'])
-		self.roots_in_BrowseBox = []
 		for i in range(len(self.chapters)):
 			root = QTreeWidgetItem(self.tree_sections)
 			root.setText(0, self.chapters[i][1])
@@ -152,7 +161,6 @@ class MainWindow(QWidget):
 			for j in range(len(secs_in_this_chp)):
 				child = QTreeWidgetItem(root)
 				child.setText(0, secs_in_this_chp[j])
-			self.roots_in_BrowseBox.append(root)
 			self.tree_sections.addTopLevelItem(root)
 		self.tree_sections.clicked.connect(self.tree_sections_clicked)
 		layout.addWidget(self.tree_sections, 0, 0, 2, 1)
@@ -231,7 +239,6 @@ class MainWindow(QWidget):
 		self.tree_sections_in_ModifyBox.setMaximumWidth(500)
 		self.tree_sections_in_ModifyBox.setSelectionMode(QAbstractItemView.SingleSelection)
 		self.tree_sections_in_ModifyBox.setHeaderLabels(['选择节(单选子节点)'])
-		self.roots_in_ModifyBox = []
 		for i in range(len(self.chapters)):
 			root = QTreeWidgetItem(self.tree_sections_in_ModifyBox)
 			root.setText(0, self.chapters[i][1])
@@ -243,7 +250,6 @@ class MainWindow(QWidget):
 			for j in range(len(secs_in_this_chp)):
 				child = QTreeWidgetItem(root)
 				child.setText(0, secs_in_this_chp[j])
-			self.roots_in_ModifyBox.append(root)
 			self.tree_sections_in_ModifyBox.addTopLevelItem(root)
 		layout.addWidget(self.tree_sections_in_ModifyBox, 0, 0, 3, 1)
 
@@ -299,7 +305,7 @@ class MainWindow(QWidget):
 		layout.setHorizontalSpacing(20)
 		layout.setRowStretch(0, 1)
 		layout.setRowStretch(1, 100)
-		self.ModifyQuestionBox.setLayout(layout)		
+		self.ModifyQuestionBox.setLayout(layout)	
 
 	def createSectionsBox(self):
 		self.SectionsBox = QGroupBox('选择导出章节')
@@ -316,7 +322,7 @@ class MainWindow(QWidget):
 		layout.addWidget(self.btn_changesections)
 		self.SectionsBox.setLayout(layout)
 
-	def createExportBox(self):
+	def createExportOptionsBox(self):
 		layout_number = QGridLayout()
 		self.lbl_schoice = QLabel('单选题数量：')
 		self.lbl_mchoice = QLabel('多选题数量：')
@@ -422,8 +428,104 @@ class MainWindow(QWidget):
 		layout.addLayout(layout_btn, 1, 1)
 		layout.setHorizontalSpacing(30)
 
-		self.ExportBox = QGroupBox('导出选项')
-		self.ExportBox.setLayout(layout)
+		self.ExportOptionsBox = QGroupBox('导出选项')
+		self.ExportOptionsBox.setLayout(layout)
+
+	def createSelectedNumBox(self): # 当前选中题目的数目
+		self.SelectedNumBox = QGroupBox('当前选中各类型题目总数')
+		layout = QVBoxLayout()
+		self.tbl_selected_num = QTableWidget()
+		self.tbl_selected_num.setRowCount(1)
+		self.tbl_selected_num.setColumnCount(6)
+		self.tbl_selected_num.verticalHeader().setVisible(False)
+		self.tbl_selected_num.setHorizontalHeaderLabels(['单选题数','多选题数','判断题数','填空题数','计算题数','证明题数'])
+		self.tbl_selected_num.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+		self.tbl_selected_num.setEditTriggers(QAbstractItemView.NoEditTriggers)
+		self.tbl_selected_num.setSelectionMode(QAbstractItemView.NoSelection)
+		self.update_total_questions_sum()
+		self.tbl_selected_num.setFixedHeight(80)
+		self.tbl_selected_num.setStyleSheet('''QTableWidget { border: 0; }''')
+		self.tbl_selected_num.setGridStyle(0)
+		layout.addWidget(self.tbl_selected_num)
+		self.SelectedNumBox.setLayout(layout)
+		self.SelectedNumBox.setMaximumHeight(self.tbl_selected_num.width()+20)
+	
+	def createSelectQuestionBox(self):
+		self.SelectQuestionBox = QGroupBox('选择题目')
+		self.sectionid_selected_in_SelectQuestionBox = 0 # 当前选择的章节id，0表示未选择
+		self.questionid_in_SelectQuestionBox = 0 # 当前显示的问题的id，0表示未选择
+		self.questionids_in_SelectQuestionBox = [] # 当前显示的章节下符合条件的全部问题的id
+		self.question_data_in_SelectQuestionBox = [] # 当前显示的问题的详细数据
+		self.schoiceid_prepare = [] # 自由选择问题导出标签页中待导出的所有单选题id
+		self.mchoiceid_prepare = [] # 自由选择问题导出标签页中待导出的所有多选题id
+		self.tofid_prepare = [] # 自由选择问题导出标签页中待导出的所有判断题id
+		self.blankid_prepare = [] # 自由选择问题导出标签页中待导出的所有填空题id
+		self.calculationid_prepare = [] # 自由选择问题导出标签页中待导出的所有计算题id
+		self.proofid_prepare = [] # 自由选择问题导出标签页中待导出的所有证明题id
+
+		layout = QGridLayout()
+		self.tree_sections_in_SelectQuestionBox = QTreeWidget()
+		self.tree_sections_in_SelectQuestionBox.setColumnCount(1)
+		self.tree_sections_in_SelectQuestionBox.setMaximumWidth(500)
+		self.tree_sections_in_SelectQuestionBox.setSelectionMode(QAbstractItemView.SingleSelection)
+		self.tree_sections_in_SelectQuestionBox.setHeaderLabels(['选择节(单选子节点)'])
+		for i in range(len(self.chapters)):
+			root = QTreeWidgetItem(self.tree_sections_in_SelectQuestionBox)
+			root.setText(0, self.chapters[i][1])
+			secs_in_this_chp = []
+			j = 0
+			for j in range(len(self.sections)):
+				if self.sections[j][2] == self.chapters[i][0]:
+					secs_in_this_chp.append(self.sections[j][1])
+			for j in range(len(secs_in_this_chp)):
+				child = QTreeWidgetItem(root)
+				child.setText(0, secs_in_this_chp[j])
+			self.tree_sections_in_SelectQuestionBox.addTopLevelItem(root)
+		layout.addWidget(self.tree_sections_in_SelectQuestionBox, 0, 0, 3, 1)
+
+		layout2 = QHBoxLayout()
+		self.list_type_of_question_in_SelectQuestionBox = QComboBox()
+		self.list_type_of_question_in_SelectQuestionBox.addItems(['单选题','多选题','判断题','填空题','计算题','证明题'])
+		self.list_type_of_question_in_SelectQuestionBox.setCurrentIndex(0)
+		self.list_type_of_question_in_SelectQuestionBox.currentIndexChanged.connect(self.retrieve_questionids_in_SelectQuestionBox)
+		self.lbl_sequence_in_SelectQuestionBox = QLabel('题目序列：0/0')
+		self.lbl_sequence_in_SelectQuestionBox.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+		layout2.addWidget(self.list_type_of_question_in_SelectQuestionBox)
+		layout2.addWidget(self.lbl_sequence_in_SelectQuestionBox)
+		layout.addLayout(layout2, 0, 1, 1, 3)
+
+		self.webView_in_SelectQuestionBox = QWebEngineView()
+		self.webView_in_SelectQuestionBox.setMinimumSize(600, 400)
+		self.webView_in_SelectQuestionBox.setContextMenuPolicy(0) # 禁止右键菜单
+		layout.addWidget(self.webView_in_SelectQuestionBox, 1, 1, 1, 3)
+
+		layout_navi_btn = QHBoxLayout()
+		self.btn_previous_in_SelectQuestionBox = QPushButton('上一题(&Z)')
+		self.btn_next_in_SelectQuestionBox = QPushButton('下一题(&X)')
+		self.chk_select_in_SelectQuestionBox = QCheckBox('选中该题(&S)')
+		fm = QFontMetrics(self.btn_modify.font())
+		margin = 4
+		self.btn_previous_in_SelectQuestionBox.setFixedWidth(fm.width(self.btn_previous_in_SelectQuestionBox.text()) + margin)
+		self.btn_next_in_SelectQuestionBox.setFixedWidth(fm.width(self.btn_next_in_SelectQuestionBox.text()) + margin)
+		self.btn_previous_in_SelectQuestionBox.setEnabled(False)
+		self.chk_select_in_SelectQuestionBox.setEnabled(False)
+		self.btn_next_in_SelectQuestionBox.setEnabled(False)
+		self.btn_previous_in_SelectQuestionBox.clicked.connect(self.btn_previous_in_SelectQuestionBox_clicked)
+		self.btn_next_in_SelectQuestionBox.clicked.connect(self.btn_next_in_SelectQuestionBox_clicked)
+		self.chk_select_in_SelectQuestionBox.clicked.connect(self.chk_select_in_SelectQuestionBox_clicked)
+		layout_navi_btn.addWidget(self.btn_previous_in_SelectQuestionBox)
+		layout_navi_btn.addWidget(self.chk_select_in_SelectQuestionBox)
+		layout_navi_btn.addWidget(self.btn_next_in_SelectQuestionBox)
+		layout_navi_btn.setSpacing(20)
+
+		self.update_preview_in_SelectQuestionBox()
+		self.tree_sections_in_SelectQuestionBox.clicked.connect(self.tree_sections_in_SelectQuestionBox_clicked)
+		
+		layout.addLayout(layout_navi_btn,2,2)
+		layout.setHorizontalSpacing(20)
+		layout.setRowStretch(0, 1)
+		layout.setRowStretch(1, 100)
+		self.SelectQuestionBox.setLayout(layout)
 
 	def btn_changesections_clicked(self):
 		self.select_sections_ui = SelectSections()
@@ -658,7 +760,8 @@ class MainWindow(QWidget):
 					self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index]
 				self.update_preview_in_ModifyBox()
 				self.update_preview_in_BrowseBox()
-				self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
+				self.update_preview_in_SelectQuestionBox()
+				self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox) # 更新按章节导出标签面上的题目数量
 			else:
 				QMessageBox.about(self, '通知', '删除失败！')
 
@@ -807,6 +910,51 @@ class MainWindow(QWidget):
 			# self.add_proof_ui.update_preview()
 			self.add_proof_ui.show()
 
+	def btn_previous_in_SelectQuestionBox_clicked(self):
+		index = self.questionids_in_SelectQuestionBox.index(self.questionid_in_SelectQuestionBox)
+		if index != 0:
+			self.questionid_in_SelectQuestionBox = self.questionids_in_SelectQuestionBox[index-1]
+		self.update_preview_in_SelectQuestionBox()
+
+	def btn_next_in_SelectQuestionBox_clicked(self):
+		index = self.questionids_in_SelectQuestionBox.index(self.questionid_in_SelectQuestionBox)
+		if index != len(self.questionids_in_SelectQuestionBox)-1:
+			self.questionid_in_SelectQuestionBox = self.questionids_in_SelectQuestionBox[index+1]
+		self.update_preview_in_SelectQuestionBox()
+		
+	def chk_select_in_SelectQuestionBox_clicked(self):
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
+			if self.chk_select_in_SelectQuestionBox.isChecked():
+				self.schoiceid_prepare.append(self.questionid_in_SelectQuestionBox)
+			else:
+				self.schoiceid_prepare.remove(self.questionid_in_SelectQuestionBox)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '多选题':
+			if self.chk_select_in_SelectQuestionBox.isChecked():
+				self.mchoiceid_prepare.append(self.questionid_in_SelectQuestionBox)
+			else:
+				self.mchoiceid_prepare.remove(self.questionid_in_SelectQuestionBox)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '判断题':
+			if self.chk_select_in_SelectQuestionBox.isChecked():
+				self.tofid_prepare.append(self.questionid_in_SelectQuestionBox)
+			else:
+				self.tofid_prepare.remove(self.questionid_in_SelectQuestionBox)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '填空题':
+			if self.chk_select_in_SelectQuestionBox.isChecked():
+				self.blankid_prepare.append(self.questionid_in_SelectQuestionBox)
+			else:
+				self.blankid_prepare.remove(self.questionid_in_SelectQuestionBox)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '计算题':
+			if self.chk_select_in_SelectQuestionBox.isChecked():
+				self.calculationid_prepare.append(self.questionid_in_SelectQuestionBox)
+			else:
+				self.calculationid_prepare.remove(self.questionid_in_SelectQuestionBox)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '证明题':
+			if self.chk_select_in_SelectQuestionBox.isChecked():
+				self.proofid_prepare.append(self.questionid_in_SelectQuestionBox)
+			else:
+				self.proofid_prepare.remove(self.questionid_in_SelectQuestionBox)
+		self.update_selectedNum()
+
 	def chk_solution_clicked(self):
 		self.chk_follow.setEnabled(self.chk_solution.isChecked())
 
@@ -820,7 +968,7 @@ class MainWindow(QWidget):
 
 	def tree_sections_clicked(self):
 		currentItem = self.tree_sections.currentItem()
-		if currentItem in self.roots_in_BrowseBox: # 如果点击的是章
+		if currentItem.parent() == None: # 如果点击的是章
 			if (not currentItem.isSelected()) and (currentItem in self.chapters_selected_previously): # 如果上次选中，这次没选中，则设置所有子节点未选中
 				self.chapters_selected_previously.remove(currentItem)
 				for i in range(currentItem.childCount()):
@@ -836,7 +984,7 @@ class MainWindow(QWidget):
 		items = self.tree_sections.selectedItems()
 		self.selected_sectionsid_in_BrowseBox = []
 		for item in items:
-			if item not in self.roots_in_BrowseBox: # 不是父节点的话
+			if item.parent() != None: # 不是父节点的话
 				i = 0
 				while item.text(0) != self.sections[i][1]:
 					i = i + 1
@@ -848,7 +996,7 @@ class MainWindow(QWidget):
 	def tree_sections_in_ModifyBox_clicked(self):
 		currentItem = self.tree_sections_in_ModifyBox.currentItem()
 		if currentItem.isSelected():
-			if currentItem not in self.roots_in_ModifyBox:
+			if currentItem.parent() != None:
 				i = 0
 				while currentItem.text(0) != self.sections[i][1]:
 					i += 1
@@ -858,6 +1006,20 @@ class MainWindow(QWidget):
 		else:
 			self.sectionid_selected_in_ModifyBox = 0
 		self.retrieve_questionids_in_ModifyBox()
+
+	def tree_sections_in_SelectQuestionBox_clicked(self):
+		currentItem = self.tree_sections_in_SelectQuestionBox.currentItem()
+		if currentItem.isSelected():
+			if currentItem.parent() != None:
+				i = 0
+				while currentItem.text(0) != self.sections[i][1]:
+					i += 1
+				self.sectionid_selected_in_SelectQuestionBox = self.sections[i][0]
+			else:
+				self.sectionid_selected_in_SelectQuestionBox = 0
+		else:
+			self.sectionid_selected_in_SelectQuestionBox = 0
+		self.retrieve_questionids_in_SelectQuestionBox()
 
 	def update_total_questions_sum(self): # 更新当前各类问题总数
 		searchstring = ('select count(*) from schoice')
@@ -912,9 +1074,30 @@ class MainWindow(QWidget):
 				self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index]
 		self.update_preview_in_BrowseBox()
 		self.update_preview_in_ModifyBox()
+		self.update_preview_in_SelectQuestionBox()
 		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
+		
+	def update_selectedNum(self): # 更新自由选题导出标签页上当前选中题目数
+		newItem = QTableWidgetItem(str(len(self.schoiceid_prepare)))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_selected_num.setItem(0, 0, newItem)
+		newItem = QTableWidgetItem(str(len(self.mchoiceid_prepare)))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_selected_num.setItem(0, 1, newItem)
+		newItem = QTableWidgetItem(str(len(self.tofid_prepare)))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_selected_num.setItem(0, 2, newItem)
+		newItem = QTableWidgetItem(str(len(self.blankid_prepare)))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_selected_num.setItem(0, 3, newItem)
+		newItem = QTableWidgetItem(str(len(self.calculationid_prepare)))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_selected_num.setItem(0, 4, newItem)
+		newItem = QTableWidgetItem(str(len(self.proofid_prepare)))
+		newItem.setTextAlignment(Qt.AlignHCenter)
+		self.tbl_selected_num.setItem(0, 5, newItem)
 
-	def update_sections_in_ExportBox(self, sectionids):
+	def update_sections_in_ExportBox(self, sectionids): # 更新按章节导出标签页上章节题目数
 		self.selected_sectionids_in_ExportBox = sectionids
 		self.tbl_selectedsections.setRowCount(len(sectionids))
 		total_num_schoice = 0
@@ -1007,6 +1190,53 @@ class MainWindow(QWidget):
 		self.btn_copy.setEnabled(True)
 		self.btn_next.setEnabled(index != len(self.questionids_in_ModifyBox)-1)
 		self.lbl_sequence_in_ModifyBox.setText('题目序列：%d/%d' % (index+1, len(self.questionids_in_ModifyBox)))
+
+	def update_preview_in_SelectQuestionBox(self):
+		# print('sectionid:%d,questionid:%d' % (self.sectionid_selected_in_SelectQuestionBox,self.questionid_in_SelectQuestionBox))
+		if self.sectionid_selected_in_SelectQuestionBox == 0 or self.questionid_in_SelectQuestionBox == 0:
+			self.btn_next_in_SelectQuestionBox.setEnabled(False)
+			self.btn_previous_in_SelectQuestionBox.setEnabled(False)
+			self.chk_select_in_SelectQuestionBox.setEnabled(False)
+			self.lbl_sequence_in_SelectQuestionBox.setText('题目序列：0/0')
+			self.webView_in_SelectQuestionBox.setHtml(myfun.gethtml(self.webView_in_SelectQuestionBox.width()))
+			return
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
+			searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice where id=%d' % (self.questionid_in_SelectQuestionBox))
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '多选题':
+			searchstring = ('select "question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source" from mchoice where id=%d' % (self.questionid_in_SelectQuestionBox))
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '判断题':
+			searchstring = ('select "question", "correct", "explain", "section", "difficulty", "source" from tof where id=%d' % (self.questionid_in_SelectQuestionBox))
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '填空题':
+			searchstring = ('select "question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source" from blank where id=%d' % (self.questionid_in_SelectQuestionBox))
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '计算题':
+			searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation where id=%d' % (self.questionid_in_SelectQuestionBox))
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '证明题':
+			searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof where id=%d' % (self.questionid_in_SelectQuestionBox))
+		thisquestion = mydb.search(searchstring)
+		self.question_data_in_SelectQuestionBox = [i for i in thisquestion[0]]
+		questionstring = myfun.format_questiondata_to_html(self.question_data_in_SelectQuestionBox, self.list_type_of_question_in_SelectQuestionBox.currentText(), fromdatabase=1)
+		pageSourceContent = questionstring
+		self.webView_in_SelectQuestionBox.setHtml(myfun.gethtml(self.webView_in_SelectQuestionBox.width(), pageSourceContent))
+		index = self.questionids_in_SelectQuestionBox.index(self.questionid_in_SelectQuestionBox)
+		self.btn_previous_in_SelectQuestionBox.setEnabled(index != 0)
+		self.chk_select_in_SelectQuestionBox.setEnabled(True)
+		self.btn_next_in_SelectQuestionBox.setEnabled(index != len(self.questionids_in_SelectQuestionBox)-1)
+		self.lbl_sequence_in_SelectQuestionBox.setText('题目序列：%d/%d' % (index+1, len(self.questionids_in_SelectQuestionBox)))
+		self.update_checkStatus_in_SelectQuestionBox()
+
+	def update_checkStatus_in_SelectQuestionBox(self):
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
+			self.chk_select_in_SelectQuestionBox.setChecked(self.questionid_in_SelectQuestionBox in self.schoiceid_prepare)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '多选题':
+			self.chk_select_in_SelectQuestionBox.setChecked(self.questionid_in_SelectQuestionBox in self.mchoiceid_prepare)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '判断题':
+			self.chk_select_in_SelectQuestionBox.setChecked(self.questionid_in_SelectQuestionBox in self.tofid_prepare)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '填空题':
+			self.chk_select_in_SelectQuestionBox.setChecked(self.questionid_in_SelectQuestionBox in self.blankid_prepare)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '计算题':
+			self.chk_select_in_SelectQuestionBox.setChecked(self.questionid_in_SelectQuestionBox in self.calculationid_prepare)
+		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '证明题':
+			self.chk_select_in_SelectQuestionBox.setChecked(self.questionid_in_SelectQuestionBox in self.proofid_prepare)
 
 	# 更新预览
 	def update_preview_in_BrowseBox(self):
@@ -1146,6 +1376,40 @@ class MainWindow(QWidget):
 		else:
 			self.questionid_in_ModifyBox = 0
 		self.update_preview_in_ModifyBox()
+
+	def retrieve_questionids_in_SelectQuestionBox(self):
+		if self.sectionid_selected_in_SelectQuestionBox == 0:
+			self.update_preview_in_SelectQuestionBox()
+			return
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
+			searchstring = ('select "id" from schoice where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
+			schoice = mydb.search(searchstring)
+			self.questionids_in_SelectQuestionBox = [i[0] for i in schoice] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '多选题':
+			searchstring = ('select "id" from mchoice where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
+			mchoice = mydb.search(searchstring)
+			self.questionids_in_SelectQuestionBox = [i[0] for i in mchoice] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '判断题':
+			searchstring = ('select "id" from tof where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
+			tof = mydb.search(searchstring)
+			self.questionids_in_SelectQuestionBox = [i[0] for i in tof] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '填空题':
+			searchstring = ('select "id" from blank where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
+			blank = mydb.search(searchstring)
+			self.questionids_in_SelectQuestionBox = [i[0] for i in blank] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '计算题':
+			searchstring = ('select "id" from calculation where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
+			calculation = mydb.search(searchstring)
+			self.questionids_in_SelectQuestionBox = [i[0] for i in calculation] # 指定章节指定题型的所有id列表
+		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '证明题':
+			searchstring = ('select "id" from proof where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
+			proof = mydb.search(searchstring)
+			self.questionids_in_SelectQuestionBox = [i[0] for i in proof] # 指定章节指定题型的所有id列表
+		if self.questionids_in_SelectQuestionBox:
+			self.questionid_in_SelectQuestionBox = self.questionids_in_SelectQuestionBox[0]
+		else:
+			self.questionid_in_SelectQuestionBox = 0
+		self.update_preview_in_SelectQuestionBox()
 
 	def transmit_settings(self, ui): # 将设置传递给打开的子窗口
 		ui.other_settings.connect(self.update_after_insertion)
@@ -1377,6 +1641,7 @@ class MainWindow(QWidget):
 						self.write_proof_soltuion(f, proof)
 					f.writelines('\\end{enumerate}\n')
 			f.close()
+			self.export_questionid(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
 			QMessageBox.about(self, u'通知', u'导出成功！')
 		except Exception as e:
 			print(e)
@@ -1386,10 +1651,37 @@ class MainWindow(QWidget):
 	def export_questions_to_html(self):
 		pass
 
+	def export_questionid(self,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid):
+		try:
+			f = open('questionid.txt', 'w', encoding='utf-8')
+			f.writelines('[schoice]\n')
+			for i in schoiceid:
+				f.writelines('%d\n' % (i))
+			f.writelines('[mchoice]\n')
+			for i in mchoiceid:
+				f.writelines('%d\n' % (i))
+			f.writelines('[tof]\n')
+			for i in tofid:
+				f.writelines('%d\n' % (i))
+			f.writelines('[blank]\n')
+			for i in blankid:
+				f.writelines('%d\n' % (i))
+			f.writelines('[calculation]\n')
+			for i in calculationid:
+				f.writelines('%d\n' % (i))
+			f.writelines('[proof]\n')
+			for i in proofid:
+				f.writelines('%d\n' % (i))
+			f.close()
+		except Exception as e:
+			print(e)
+			return
+
 	# 调整窗口大小事件
 	def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
 		self.update_preview_in_BrowseBox()
 		self.update_preview_in_ModifyBox()
+		self.update_preview_in_SelectQuestionBox()
 
 	def write_schoice_question(self, f, schoice):
 		f.writelines('%s\n' % (schoice[0]))
