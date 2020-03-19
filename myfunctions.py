@@ -70,10 +70,10 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
                                     + '</p><p>答案： ' + answer
                                     + '</p><p>解析： ' + format_subquestion_to_html(question[5], fromdatabase))
     elif question_type == '计算题':
-        questionstring = ('<p>' + format_question_to_html(question[0], '计算题', fromdatabase)
+        questionstring = ('<p>' + format_number + format_question_to_html(question[0], '计算题', fromdatabase)
                                     + '</p><p>解： ' + format_subquestion_to_html(question[1], fromdatabase))
     elif question_type == '证明题':
-        questionstring = ('<p>' + format_question_to_html(question[0], '证明题', fromdatabase)
+        questionstring = ('<p>' + format_number + format_question_to_html(question[0], '证明题', fromdatabase)
                                     + '</p><p>证明： ' + format_subquestion_to_html(question[1], fromdatabase))
     return questionstring
 

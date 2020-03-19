@@ -16,6 +16,7 @@ from AddFillinBlanksWindow import *
 from AddCalculationWindow import *
 from AddProofWindow import *
 from SelectSectionsWindow import *
+from PreviewQuestionsWindow import *
 import myfunctions as myfun
 import database as mydb
 
@@ -375,6 +376,7 @@ class MainWindow(QWidget):
 		self.chk_solution.clicked.connect(self.chk_solution_clicked)
 		self.chk_random = QCheckBox('打乱题目顺序')
 		self.chk_randomchoice = QCheckBox('选择题选项乱序')
+		self.chk_randomchoice.setEnabled(False)
 		self.chk_white = QCheckBox('主观题后留空')
 		self.chk_white.setChecked(True)
 		self.chk_white.clicked.connect(self.chk_white_clicked)
@@ -418,9 +420,6 @@ class MainWindow(QWidget):
 		layout_btn.addWidget(self.btn_export_to_latex)
 		layout_btn.addWidget(self.btn_compile)
 		layout_btn.addWidget(self.btn_export_to_html)
-
-		# layout.addWidget(QLabel(' '), 0, 2)
-		# layout.addWidget(QLabel(' '), 0, 5)
 
 		layout = QGridLayout()
 		layout.addLayout(layout_number, 0, 0, 2, 1)
@@ -500,23 +499,31 @@ class MainWindow(QWidget):
 		layout.addWidget(self.webView_in_SelectQuestionBox, 1, 1, 1, 3)
 
 		layout_navi_btn = QHBoxLayout()
+		self.btn_import_id = QPushButton('导入...')
+		self.btn_preview = QPushButton('预览导出')
+		self.btn_preview.clicked.connect(self.btn_preview_clicked)
 		self.btn_previous_in_SelectQuestionBox = QPushButton('上一题(&Z)')
 		self.btn_next_in_SelectQuestionBox = QPushButton('下一题(&X)')
-		self.chk_select_in_SelectQuestionBox = QCheckBox('选中该题(&S)')
-		fm = QFontMetrics(self.btn_modify.font())
-		margin = 4
+		self.chk_select_in_SelectQuestionBox = QCheckBox('选中(&S)')
+		fm = QFontMetrics(self.btn_import_id.font())
+		margin = 20
 		self.btn_previous_in_SelectQuestionBox.setFixedWidth(fm.width(self.btn_previous_in_SelectQuestionBox.text()) + margin)
 		self.btn_next_in_SelectQuestionBox.setFixedWidth(fm.width(self.btn_next_in_SelectQuestionBox.text()) + margin)
+		self.btn_import_id.setFixedWidth(fm.width(self.btn_import_id.text()) + margin)
+		self.btn_preview.setFixedWidth(fm.width(self.btn_preview.text()) + margin)
 		self.btn_previous_in_SelectQuestionBox.setEnabled(False)
 		self.chk_select_in_SelectQuestionBox.setEnabled(False)
 		self.btn_next_in_SelectQuestionBox.setEnabled(False)
+		self.btn_import_id.clicked.connect(self.btn_import_id_clicked)
 		self.btn_previous_in_SelectQuestionBox.clicked.connect(self.btn_previous_in_SelectQuestionBox_clicked)
 		self.btn_next_in_SelectQuestionBox.clicked.connect(self.btn_next_in_SelectQuestionBox_clicked)
 		self.chk_select_in_SelectQuestionBox.clicked.connect(self.chk_select_in_SelectQuestionBox_clicked)
+		layout_navi_btn.addWidget(self.btn_import_id)
 		layout_navi_btn.addWidget(self.btn_previous_in_SelectQuestionBox)
 		layout_navi_btn.addWidget(self.chk_select_in_SelectQuestionBox)
 		layout_navi_btn.addWidget(self.btn_next_in_SelectQuestionBox)
-		layout_navi_btn.setSpacing(20)
+		layout_navi_btn.addWidget(self.btn_preview)
+		layout_navi_btn.setSpacing(10)
 
 		self.update_preview_in_SelectQuestionBox()
 		self.tree_sections_in_SelectQuestionBox.clicked.connect(self.tree_sections_in_SelectQuestionBox_clicked)
@@ -612,7 +619,6 @@ class MainWindow(QWidget):
 			self.add_schoice_ui.other_settings.connect(self.update_after_modification)
 			self.add_schoice_ui.modification = self.questionid_in_ModifyBox
 			self.add_schoice_ui.btn_add.setText('修改题目')
-			# self.add_schoice_ui.update_preview()
 			self.add_schoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
 			self.add_mchoice_ui = AddMultipleChoice()
@@ -641,7 +647,6 @@ class MainWindow(QWidget):
 			self.add_mchoice_ui.other_settings.connect(self.update_after_modification)
 			self.add_mchoice_ui.modification = self.questionid_in_ModifyBox
 			self.add_mchoice_ui.btn_add.setText('修改题目')
-			# self.add_mchoice_ui.update_preview()
 			self.add_mchoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
 			self.add_tof_ui = AddToF()
@@ -663,7 +668,6 @@ class MainWindow(QWidget):
 			self.add_tof_ui.other_settings.connect(self.update_after_modification)
 			self.add_tof_ui.modification = self.questionid_in_ModifyBox
 			self.add_tof_ui.btn_add.setText('修改题目')
-			# self.add_tof_ui.update_preview()
 			self.add_tof_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
 			self.add_blank_ui = AddFillinBlanks()
@@ -688,7 +692,6 @@ class MainWindow(QWidget):
 			self.add_blank_ui.other_settings.connect(self.update_after_modification)
 			self.add_blank_ui.modification = self.questionid_in_ModifyBox
 			self.add_blank_ui.btn_add.setText('修改题目')
-			# self.add_blank_ui.update_preview()
 			self.add_blank_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
 			self.add_calculation_ui = AddCalculation()
@@ -709,7 +712,6 @@ class MainWindow(QWidget):
 			self.add_calculation_ui.other_settings.connect(self.update_after_modification)
 			self.add_calculation_ui.modification = self.questionid_in_ModifyBox
 			self.add_calculation_ui.btn_add.setText('修改题目')
-			# self.add_calculation_ui.update_preview()
 			self.add_calculation_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
 			self.add_proof_ui = AddProof()
@@ -730,7 +732,6 @@ class MainWindow(QWidget):
 			self.add_proof_ui.other_settings.connect(self.update_after_modification)
 			self.add_proof_ui.modification = self.questionid_in_ModifyBox
 			self.add_proof_ui.btn_add.setText('修改题目')
-			# self.add_proof_ui.update_preview()
 			self.add_proof_ui.show()
 
 	def btn_delete_clicked(self):
@@ -799,7 +800,6 @@ class MainWindow(QWidget):
 				i += 1
 			self.add_schoice_ui.list_source.setCurrentIndex(i)
 			self.add_schoice_ui.other_settings.connect(self.update_after_insertion)
-			# self.add_schoice_ui.update_preview()
 			self.add_schoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
 			self.add_mchoice_ui = AddMultipleChoice()
@@ -826,7 +826,6 @@ class MainWindow(QWidget):
 				i += 1
 			self.add_mchoice_ui.list_source.setCurrentIndex(i)
 			self.add_mchoice_ui.other_settings.connect(self.update_after_insertion)
-			# self.add_mchoice_ui.update_preview()
 			self.add_mchoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
 			self.add_tof_ui = AddToF()
@@ -846,7 +845,6 @@ class MainWindow(QWidget):
 				i += 1
 			self.add_tof_ui.list_source.setCurrentIndex(i)
 			self.add_tof_ui.other_settings.connect(self.update_after_insertion)
-			# self.add_tof_ui.update_preview()
 			self.add_tof_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
 			self.add_blank_ui = AddFillinBlanks()
@@ -869,7 +867,6 @@ class MainWindow(QWidget):
 				i += 1
 			self.add_blank_ui.list_source.setCurrentIndex(i)
 			self.add_blank_ui.other_settings.connect(self.update_after_insertion)
-			# self.add_blank_ui.update_preview()
 			self.add_blank_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
 			self.add_calculation_ui = AddCalculation()
@@ -888,7 +885,6 @@ class MainWindow(QWidget):
 				i += 1
 			self.add_calculation_ui.list_source.setCurrentIndex(i)
 			self.add_calculation_ui.other_settings.connect(self.update_after_insertion)
-			# self.add_calculation_ui.update_preview()
 			self.add_calculation_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
 			self.add_proof_ui = AddProof()
@@ -907,7 +903,6 @@ class MainWindow(QWidget):
 				i += 1
 			self.add_proof_ui.list_source.setCurrentIndex(i)
 			self.add_proof_ui.other_settings.connect(self.update_after_insertion)
-			# self.add_proof_ui.update_preview()
 			self.add_proof_ui.show()
 
 	def btn_previous_in_SelectQuestionBox_clicked(self):
@@ -921,7 +916,55 @@ class MainWindow(QWidget):
 		if index != len(self.questionids_in_SelectQuestionBox)-1:
 			self.questionid_in_SelectQuestionBox = self.questionids_in_SelectQuestionBox[index+1]
 		self.update_preview_in_SelectQuestionBox()
-		
+
+	def btn_import_id_clicked(self):
+		folder = QDir.currentPath() + '/exports/'
+		filename, _ = QFileDialog.getOpenFileName(self, '请选择文件', folder, "txt files (*.txt)")
+		f = open(filename, 'r', encoding='utf-8')
+		f_list = f.readlines()
+		f_list = [line.strip() for line in f_list]
+		try:
+			schoice_index = f_list.index('[schoice]')
+			mchoice_index = f_list.index('[mchoice]')
+			tof_index = f_list.index('[tof]')
+			blank_index = f_list.index('[blank]')
+			calculation_index = f_list.index('[calculation]')
+			proof_index = f_list.index('[proof]')
+		except Exception as e:
+			print(e)
+			QMessageBox.about(self, '错误', '读取id出错！')
+		self.schoiceid_prepare.clear()
+		self.mchoiceid_prepare.clear()
+		self.tofid_prepare.clear()
+		self.blankid_prepare.clear()
+		self.calculationid_prepare.clear()
+		self.proofid_prepare.clear()
+		for i in range(schoice_index+1, mchoice_index):
+			self.schoiceid_prepare.append(int(f_list[i]))
+		for i in range(mchoice_index+1, tof_index):
+			self.mchoiceid_prepare.append(int(f_list[i]))
+		for i in range(tof_index+1, blank_index):
+			self.tofid_prepare.append(int(f_list[i]))
+		for i in range(blank_index+1, calculation_index):
+			self.blankid_prepare.append(int(f_list[i]))
+		for i in range(calculation_index+1, proof_index):
+			self.calculationid_prepare.append(int(f_list[i]))
+		for i in range(proof_index+1, len(f_list)):
+			self.proofid_prepare.append(int(f_list[i]))
+		self.update_checkStatus_in_SelectQuestionBox()
+		self.update_selectedNum()
+
+	def btn_preview_clicked(self):
+		self.preview_ui = PreviewQuestions()
+		self.preview_ui.schoiceid = self.schoiceid_prepare
+		self.preview_ui.mchoiceid = self.mchoiceid_prepare
+		self.preview_ui.tofid = self.tofid_prepare
+		self.preview_ui.blankid = self.blankid_prepare
+		self.preview_ui.calculationid = self.calculationid_prepare
+		self.preview_ui.proofid = self.proofid_prepare
+		self.preview_ui.createPreview()
+		self.preview_ui.show()
+
 	def chk_select_in_SelectQuestionBox_clicked(self):
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
 			if self.chk_select_in_SelectQuestionBox.isChecked():
@@ -1494,7 +1537,9 @@ class MainWindow(QWidget):
 			return
 		
 		try:
-			f = open('myquestions.tex', 'w', encoding='utf-8')
+			filename = ('questions[%s]' % QDateTime.currentDateTime().toString(Qt.ISODate).replace(':','-'))
+			filepath = ('%s/exports/%s.tex' % (QDir.currentPath(), filename))
+			f = open(filepath, 'w', encoding='utf-8')
 			# 写入单选题
 			if num_schoice>0:
 				f.writelines('\\section{单项选择题}\n')
@@ -1641,8 +1686,8 @@ class MainWindow(QWidget):
 						self.write_proof_soltuion(f, proof)
 					f.writelines('\\end{enumerate}\n')
 			f.close()
-			self.export_questionid(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
-			QMessageBox.about(self, u'通知', u'导出成功！')
+			self.export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
+			QMessageBox.about(self, u'通知', (u'导出文件 %s.tex 成功！' % (filename)))
 		except Exception as e:
 			print(e)
 			QMessageBox.about(self, u'错误', u'导出失败！')
@@ -1651,9 +1696,10 @@ class MainWindow(QWidget):
 	def export_questions_to_html(self):
 		pass
 
-	def export_questionid(self,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid):
+	def export_questionid(self,filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid):
 		try:
-			f = open('questionid.txt', 'w', encoding='utf-8')
+			filepath = ('%s/exports/%s(id).txt' % (QDir.currentPath(), filename))
+			f = open(filepath, 'w', encoding='utf-8')
 			f.writelines('[schoice]\n')
 			for i in schoiceid:
 				f.writelines('%d\n' % (i))
