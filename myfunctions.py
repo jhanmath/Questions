@@ -2,6 +2,10 @@
 
 from PyQt5.QtCore import QDir
 import regex
+from random import shuffle
+from datetime import datetime
+import latex
+import database as mydb
 
 def mathlength(string):
     string_altered = string
@@ -135,7 +139,7 @@ def transform_latex_to_plaintext(question): # 从数据库latex转换为窗口�
     text = text.replace('\t\t\\end{enumerate}', '')
     text = text.replace('\t\t\t\\item', '\\sub')
     text, _ = regex.subn(r'\\n(?>\\t)+', r'\n', text)
-    text, _ = regex.subn( r'\\blank[(\d+)em]', r'\\blank{\1}', text)
+    text, _ = regex.subn( r'\\blank\[(\d+)em\]', r'\\blank{\1}', text)
     return text
 
 def format_question_to_html(question, question_type, fromdatabase = 0): # 将题干转化为html
@@ -313,3 +317,404 @@ def format_enter_to_latex(text): # 将latex环境以外的回车改为\\+回车
 
 def find_text_enter(text):
     pass
+
+def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options):
+    if options['random']:
+        shuffle(schoiceid)
+        shuffle(mchoiceid)
+        shuffle(tofid)
+        shuffle(calculationid)
+        shuffle(blankid)
+        shuffle(proofid)
+    num_proof = len(proofid)
+    num_calculation = len(calculationid)
+    num_blank = len(blankid)
+    num_tof = len(tofid)
+    num_mchoice = len(mchoiceid)
+    num_schoice = len(schoiceid)
+
+    try:
+        filename = ('questions[%s]' % datetime.now().strftime('%Y-%m-%dT%H-%M-%S'))
+        filepath = ('%s/exports/%s.tex' % (QDir.currentPath(), filename))
+        f = open(filepath, 'w', encoding='utf-8')
+        f.writelines(latex.docclass)
+        f.writelines(latex.preamble)
+        f.writelines(latex.title)
+        f.writelines(latex.begindocument)
+        # 写入单选题
+        if num_schoice>0:
+            f.writelines('\\section{单项选择题}\n')
+            f.writelines('\\begin{enumerate}\n')
+            for i in range(num_schoice):
+                schoice = mydb.get_schoice_by_id(schoiceid[i])
+                f.writelines('\t\\item ')
+                write_schoice_question(f, schoice)
+                if options['follow']:
+                    f.writelines('\t\t\\tagged{sol}{答案：')
+                    write_schoice_solution(f, schoice)
+                    f.writelines('\t\t}')
+            f.writelines('\\end{enumerate}\n')
+        # 写入多选题
+        if num_mchoice>0:
+            f.writelines('\\section{多项选择题}\n')
+            f.writelines('\\begin{enumerate}\n')
+            for i in range(num_mchoice):
+                mchoiceid = mydb.get_mchoice_by_id(mchoiceid[i])
+                f.writelines('\t\\item ')
+                write_schoice_question(f, mchoice)
+                if options['follow']:
+                    f.writelines('\t\t\\tagged{sol}{答案：')
+                    write_mchoice_solution(f, mchoice)
+                    f.writelines('\t\t}')
+            f.writelines('\\end{enumerate}\n')
+        # 写入判断题
+        if num_tof>0:
+            f.writelines('\\section{判断题}\n')
+            f.writelines('\\begin{enumerate}\n')
+            for i in range(num_tof):
+                tof = mydb.get_tof_by_id(tofid[i])
+                f.writelines('\t\\item ')
+                write_tof_question(f, tof)
+                if options['follow']:
+                    f.writelines('\t\t\\tagged{sol}{答案：')
+                    write_tof_solution(f, tof)
+                    f.writelines('\t\t}')
+            f.writelines('\\end{enumerate}\n')
+        # 写入填空题
+        if num_blank>0:
+            f.writelines('\\section{填空题}\n')
+            f.writelines('\\begin{enumerate}\n')
+            for i in range(num_blank):
+                blank = mydb.get_blank_by_id(blankid[i])
+                f.writelines('\t\\item ')
+                write_blank_question(f, blank)
+                if options['follow']:
+                    if blank[0][-1] != '}':
+                        f.writelines('\\\\')
+                    f.writelines('\t\t\\tagged{sol}{答案：')
+                    write_blank_solution(f, blank)
+                    f.writelines('\t\t}')
+                else:
+                    f.writelines('\n')
+            f.writelines('\\end{enumerate}\n')
+        # 写入计算题
+        if num_calculation>0:
+            f.writelines('\\section{计算题}\n')
+            f.writelines('\\begin{enumerate}\n')
+            for i in range(num_calculation):
+                calculation = mydb.get_calculation_by_id(calculationid[i])
+                f.writelines('\t\\item ')
+                write_calculation_question(f, calculation)
+                if options['follow']:
+                    f.writelines('\t\t\\tagged{sol}{')
+                    if calculation[0][-1] != '}':
+                        f.writelines('\\\\')
+                    f.writelines('\n')
+                    write_calculation_soltuion(f, calculation)
+                    f.writelines('\t\t}')
+                elif options['white']:
+                    f.writelines('\\vspace{4.8cm}\n')
+                else:
+                    f.writelines('\n')
+            f.writelines('\\end{enumerate}\n')
+        # 写入证明题
+        if num_proof>0:
+            f.writelines('\\section{证明题}\n')
+            f.writelines('\\begin{enumerate}\n')
+            for i in range(num_proof):
+                proof = mydb.get_proof_by_id(proofid[i])
+                f.writelines('\t\\item ')
+                write_proof_question(f, proof)
+                if options['follow']:
+                    f.writelines('\t\t\\tagged{sol}{')
+                    if proof[0][-1] != '}':
+                        f.writelines('\\\\')
+                    f.writelines('\n')
+                    write_proof_soltuion(f, proof)
+                    f.writelines('\t\t}')
+                elif options['white']:
+                    f.writelines('\\vspace{4cm}\n')
+                else:
+                    f.writelines('\n')
+            f.writelines('\\end{enumerate}\n')
+
+        # 写入解答
+        if options['solution'] and (not options['follow']):
+            f.writelines('\\tagged{sol}{\n')
+            # 单选题解答
+            if num_schoice>0:
+                f.writelines('\\section{单项选择题解答}\n')
+                f.writelines('\\begin{enumerate}\n')
+                for i in range(num_schoice):
+                    schoice = mydb.get_schoice_by_id(schoiceid[i])
+                    f.writelines('\t\\item ')
+                    write_schoice_solution(f, schoice)
+                f.writelines('\\end{enumerate}\n')
+            # 多选题解答
+            if num_mchoice>0:
+                f.writelines('\\section{多项选择题解答}\n')
+                f.writelines('\\begin{enumerate}\n')
+                for i in range(num_mchoice):
+                    mchoiceid = mydb.get_mchoice_by_id(mchoiceid[i])
+                    f.writelines('\t\\item ')
+                    write_schoice_solution(f, mchoice)
+                f.writelines('\\end{enumerate}\n')
+            # 判断题解答
+            if num_tof>0:
+                f.writelines('\\section{判断题解答}\n')
+                f.writelines('\\begin{enumerate}\n')
+                for i in range(num_tof):
+                    tof = mydb.get_tof_by_id(tofid[i])
+                    f.writelines('\t\\item ')
+                    write_tof_solution(f, tof)
+                f.writelines('\\end{enumerate}\n')
+            # 填空题解答
+            if num_blank>0:
+                f.writelines('\\section{填空题解答}\n')
+                f.writelines('\\begin{enumerate}\n')
+                for i in range(num_blank):
+                    blank = mydb.get_blank_by_id(blankid[i])
+                    f.writelines('\t\\item ')
+                    write_blank_solution(f, blank)
+                f.writelines('\\end{enumerate}\n')
+            # 计算题解答
+            if num_calculation>0:
+                f.writelines('\\section{计算题解答}\n')
+                f.writelines('\\begin{enumerate}\n')
+                for i in range(num_calculation):
+                    calculation = mydb.get_calculation_by_id(calculationid[i])
+                    f.writelines('\t\\item ')
+                    write_calculation_soltuion(f, calculation)
+                f.writelines('\\end{enumerate}\n')
+            # 证明题解答
+            if num_proof>0:
+                f.writelines('\\section{证明题解答}\n')
+                f.writelines('\\begin{enumerate}\n')
+                for i in range(num_proof):
+                    proof = mydb.get_proof_by_id(proofid[i])
+                    f.writelines('\t\\item ')
+                    write_proof_soltuion(f, proof)
+                f.writelines('\\end{enumerate}\n')
+            f.writelines('}')
+        f.writelines(latex.enddocument)
+        f.close()
+        id_file_result = export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
+        return 1, filename
+    except Exception as e:
+        return 0, e
+
+def write_schoice_question(f, schoice):
+    f.writelines('%s\n' % (schoice[0]))
+    maxlen = max(mathlength(schoice[1]), mathlength(schoice[2]), mathlength(schoice[3]), mathlength(schoice[4]))
+    para = 4
+    if maxlen > 30:
+        para = 1
+    elif maxlen > 12:
+        para = 2
+    f.writelines('\t\t\\begin{choice}(%d)\n' % (para))
+    f.writelines('\t\t\t\\choice %s\n' % (schoice[1]))
+    f.writelines('\t\t\t\\choice %s\n' % (schoice[2]))
+    if schoice[3] != '':
+        f.writelines('\t\t\t\\choice %s\n' % (schoice[3]))
+    if schoice[4] != '':
+        f.writelines('\t\t\t\\choice %s\n' % (schoice[4]))
+    f.writelines('\t\t\\end{choice}\n')
+
+def write_schoice_solution(f, schoice):
+    if schoice[6] != '':
+        f.writelines('%s\\\\\n' % (schoice[5]))
+        f.writelines('\t\t解析：%s\n' % (schoice[6]))
+    else:
+        f.writelines('\%s\n' % (schoice[5]))
+
+def write_mchoice_question(f, mchoice):
+    f.writelines('%s\n' % (mchoice[0]))
+    maxlen = max(mathlength(mchoice[1]), mathlength(mchoice[2]), mathlength(mchoice[3]), mathlength(mchoice[4]))
+    para = 4
+    if maxlen > 30:
+        para = 1
+    elif maxlen > 12:
+        para = 2
+    f.writelines('\t\t\\begin{choice}(4)\n')
+    f.writelines('\t\t\t\\choice %s\n' % (mchoice[1]))
+    f.writelines('\t\t\t\\choice %s\n' % (mchoice[2]))
+    if schoice[i][3] != '':
+        f.writelines('\t\t\t\\choice %s\n' % (schoice[i][3]))
+    if schoice[i][4] != '':
+        f.writelines('\t\t\t\\choice %s\n' % (schoice[i][4]))
+    f.writelines('\t\t\\end{choice}\n')
+
+def write_mchoice_solution(f, mchoice):
+    answer = ''
+    answer_raw = mchoice[5:9]
+    for j in range(1, max(answer_raw)+1):
+        thisanswer = ''
+        for k in range(4):
+            if answer_raw[k] == j:
+                thisanswer = thisanswer + chr(k+65)
+        answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
+    if mchoice[9] != '':
+        f.writelines('%s\\\\\n' % (answer))
+        f.writelines('\t\t解析：%s\n' % (mchoice[9]))
+    else:
+        f.writelines('%s\n' % (answer))
+
+def write_tof_question(f, tof):
+    f.writelines('%s \\hfill\\emptychoice\n' % (tof[0]))
+
+def write_tof_solution(f, tof):
+    answer = ['错误', '正确']
+    if tof[2] != '':
+        f.writelines('%s\\\\\n' % (answer(tof[1])))
+        f.writelines('\t\t解析：%s\n' % (tof[2]))
+    else:
+        f.writelines('%s\n' % (answer(tof[1])))
+
+def write_blank_question(f, blank):
+    f.writelines('%s' % (blank[0]))
+
+def write_blank_solution(f, blank):
+    if blank[4] != '':
+        f.writelines('第1空：\\underline{%s}；第2空：\\underline{%s}；第3空：\\underline{%s}；第4空：\\underline{%s}' % (blank[1],blank[2],blank[3],blank[4]))
+    elif blank[3] != '':
+        f.writelines('第1空：\\underline{%s}；第2空：\\underline{%s}；第3空：\\underline{%s}' % (blank[1],blank[2],blank[3]))
+    elif blank[2] != '':
+        f.writelines('第1空：\\underline{%s}；第2空：\\underline{%s}' % (blank[1],blank[2]))
+    else:
+        f.writelines('\\underline{%s}' % (blank[1]))
+    if blank[5] != '':
+        f.writelines('\\\\\n\t\t解析：%s\n' % (blank[5]))
+    else:
+        f.writelines('\n')
+
+def write_calculation_question(f, calculation):
+    f.writelines('%s' % (calculation[0]))
+
+def write_calculation_soltuion(f, calculation):
+    if calculation[1] == '':
+        f.writelines('解：略\n')
+    else:
+        f.writelines('解：%s\n' % (calculation[1]))
+
+def write_proof_question(f, proof):
+    f.writelines('%s' % (proof[0]))
+
+def write_proof_soltuion(f, proof):
+    if proof[1] != '':
+        f.writelines('证明：%s\n' % (proof[1]))
+    else:
+        f.writelines('证明：略\n')
+
+def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options):
+    if options['random']:
+        shuffle(schoiceid)
+        shuffle(mchoiceid)
+        shuffle(tofid)
+        shuffle(calculationid)
+        shuffle(blankid)
+        shuffle(proofid)
+    num_proof = len(proofid)
+    num_calculation = len(calculationid)
+    num_blank = len(blankid)
+    num_tof = len(tofid)
+    num_mchoice = len(mchoiceid)
+    num_schoice = len(schoiceid)
+
+    try:
+        filename = ('questions[%s]' % datetime.now().strftime('%Y-%m-%dT%H-%M-%S'))
+        filepath = ('%s/exports/%s.html' % (QDir.currentPath(), filename))
+        pageSourceContent = generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
+        html_source = gethtml(100, pageSourceContent)
+        html_source = regex.sub(
+            r'<script type="text\/javascript" id="MathJax-script" async src=".*"><\/script>',
+            '<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>\n<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>',
+            html_source
+        )
+        html_source = regex.sub(
+            r'width: .*px;\n',
+            '',
+            html_source
+        )
+        f = open(filepath, 'w', encoding='utf-8')
+        f.writelines(html_source)
+        f.close()
+        id_file_result = export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
+        return 1, filename
+    except Exception as e:
+        return 0, e
+
+def export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid):
+    try:
+        filepath = ('%s/exports/%s(id).txt' % (QDir.currentPath(), filename))
+        f = open(filepath, 'w', encoding='utf-8')
+        f.writelines('[schoice]\n')
+        for i in schoiceid:
+            f.writelines('%d\n' % (i))
+        f.writelines('[mchoice]\n')
+        for i in mchoiceid:
+            f.writelines('%d\n' % (i))
+        f.writelines('[tof]\n')
+        for i in tofid:
+            f.writelines('%d\n' % (i))
+        f.writelines('[blank]\n')
+        for i in blankid:
+            f.writelines('%d\n' % (i))
+        f.writelines('[calculation]\n')
+        for i in calculationid:
+            f.writelines('%d\n' % (i))
+        f.writelines('[proof]\n')
+        for i in proofid:
+            f.writelines('%d\n' % (i))
+        f.close()
+        return 1
+    except Exception as e:
+        print(e)
+        return 0
+
+def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid):
+    num_schoice = len(schoiceid)
+    num_mchoice = len(mchoiceid)
+    num_tof = len(tofid)
+    num_blank = len(blankid)
+    num_calculation = len(calculationid)
+    num_proof = len(proofid)
+    pageSourceContent = ''
+    chinese_num = ['一','二','三','四','五','六']
+    sec = -1
+    for i in range(num_schoice):
+        thisquestion = mydb.get_schoice_by_id(schoiceid[i])
+        if i == 0:
+            sec += 1
+            pageSourceContent += ('</p><h2>%s、单选题</h2>' % (chinese_num[sec]))
+        pageSourceContent += format_questiondata_to_html(thisquestion, '单选题', str(i+1), fromdatabase=1)
+    for i in range(num_mchoice):
+        if i == 0:
+            sec += 1
+            pageSourceContent += ('</p><h2>%s、多选题</h2>' % (chinese_num[sec]))
+        thisquestion = mydb.get_mchoice_by_id(mchoiceid[i])
+        pageSourceContent += format_questiondata_to_html(thisquestion, '多选题', str(i+1), fromdatabase=1)
+    for i in range(num_tof):
+        if i == 0:
+            sec += 1
+            pageSourceContent += ('</p><h2>%s、判断题</h2>' % (chinese_num[sec]))
+        thisquestion = mydb.get_tof_by_id(tofid[i])
+        pageSourceContent += format_questiondata_to_html(thisquestion, '判断题', str(i+1), fromdatabase=1)
+    for i in range(num_blank):
+        if i == 0:
+            sec += 1
+            pageSourceContent += ('</p><h2>%s、填空题</h2>' % (chinese_num[sec]))
+        thisquestion = mydb.get_blank_by_id(blankid[i])
+        pageSourceContent += format_questiondata_to_html(thisquestion, '填空题', str(i+1), fromdatabase=1)
+    for i in range(num_calculation):
+        if i == 0:
+            sec += 1
+            pageSourceContent += ('</p><h2>%s、计算题</h2>' % (chinese_num[sec]))
+        thisquestion = mydb.get_calculation_by_id(calculationid[i])
+        pageSourceContent += format_questiondata_to_html(thisquestion, '计算题', str(i+1), fromdatabase=1)
+    for i in range(num_proof):
+        if i == 0:
+            sec += 1
+            pageSourceContent += ('</p><h2>%s、证明题</h2>' % (chinese_num[sec]))
+        thisquestion = mydb.get_proof_by_id(proofid[i])
+        pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1)
+    return pageSourceContent

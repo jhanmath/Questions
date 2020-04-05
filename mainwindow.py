@@ -8,7 +8,6 @@ import sys
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from random import shuffle
 from AddSingleChoiceWindow import *
 from AddMultipleChoiceWindow import *
 from AddToFWindow import *
@@ -26,13 +25,23 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.03.16'
-		self.selected_sectionids_in_ExportBox = [54,55,56,57]
+		self.ver = '2020.04.06'
+		self.selected_sectionids_in_ExportBox = [57,58,59,60,61]
 		self.last_added_section_id = 1
 		self.last_added_difficulty_id = 1
 		self.last_added_source_id = 1
 		self.retrieve_data()
-		
+		self.options = {'solution': True,
+						'random': True,
+						'randomchoice': False,
+						'white': True,
+						'follow': False,
+						'notsure': True,
+						'easy': True,
+						'medium': True,
+						'hard': True,
+						'hell': True}
+
 		mainlayout = QVBoxLayout()
 
 		self.createDBDisplayBox()
@@ -372,30 +381,38 @@ class MainWindow(QWidget):
 
 		layout_options = QGridLayout()
 		self.chk_solution = QCheckBox('包含解答')
-		self.chk_solution.setChecked(True)
-		self.chk_solution.clicked.connect(self.chk_solution_clicked)
 		self.chk_random = QCheckBox('打乱题目顺序')
 		self.chk_randomchoice = QCheckBox('选择题选项乱序')
-		self.chk_randomchoice.setEnabled(False)
 		self.chk_white = QCheckBox('主观题后留空')
-		self.chk_white.setChecked(True)
-		self.chk_white.clicked.connect(self.chk_white_clicked)
 		self.chk_follow = QCheckBox('解答跟随小题')
-		self.chk_follow.setChecked(False)
-		self.chk_follow.clicked.connect(self.chk_follow_clicked)
-		self.chk_distribute = QCheckBox('平均分配各节题目数量')
-		self.chk_notsure = QCheckBox('不确定难度')
-		self.chk_notsure.setChecked(True)
+		self.chk_notsure = QCheckBox('未指定难度')
 		self.chk_easy = QCheckBox('简单')
-		self.chk_easy.setChecked(True)
 		self.chk_medium = QCheckBox('中等')
-		self.chk_medium.setChecked(True)
 		self.chk_hard = QCheckBox('困难')
-		self.chk_hard.setChecked(True)
 		self.chk_hell = QCheckBox('地狱')
+		# self.chk_distribute = QCheckBox('平均分配各节题目数量')
+		# self.chk_save_id = QCheckBox('保存导出题目id')
+		# self.chk_save_id.setToolTip('保存导出的题目id，可以在自由选题导出标签页读取')
+		self.chk_solution.setChecked(True)
+		self.chk_randomchoice.setEnabled(False)
+		self.chk_white.setChecked(True)
+		self.chk_follow.setChecked(False)
+		self.chk_notsure.setChecked(True)
+		self.chk_easy.setChecked(True)
+		self.chk_medium.setChecked(True)
+		self.chk_hard.setChecked(True)
 		self.chk_hell.setChecked(True)
-		self.chk_save_id = QCheckBox('保存导出题目id')
-		self.chk_save_id.setToolTip('保存导出的题目id，可以在自由选题导出标签页读取')
+		self.chk_solution.clicked.connect(self.chk_solution_clicked)
+		self.chk_white.clicked.connect(self.chk_white_clicked)
+		self.chk_follow.clicked.connect(self.chk_follow_clicked)
+		self.chk_random.clicked.connect(self.setoptions)
+		self.chk_randomchoice.clicked.connect(self.setoptions)
+		self.chk_notsure.clicked.connect(self.setoptions)
+		self.chk_easy.clicked.connect(self.setoptions)
+		self.chk_medium.clicked.connect(self.setoptions)
+		self.chk_hard.clicked.connect(self.setoptions)
+		self.chk_hell.clicked.connect(self.setoptions)
+		self.setoptions()
 		layout_options.addWidget(self.chk_solution, 0, 0)
 		layout_options.addWidget(self.chk_follow, 1, 0)
 		layout_options.addWidget(self.chk_white, 2, 0)
@@ -406,8 +423,8 @@ class MainWindow(QWidget):
 		layout_options.addWidget(self.chk_medium, 2, 1)
 		layout_options.addWidget(self.chk_hard, 3, 1)
 		layout_options.addWidget(self.chk_hell, 4, 1)
-		layout_options.addWidget(self.chk_distribute, 1, 2)
-		layout_options.addWidget(self.chk_save_id, 0, 2)
+		# layout_options.addWidget(self.chk_distribute, 1, 2)
+		# layout_options.addWidget(self.chk_save_id, 0, 2)
 		layout_options.setHorizontalSpacing(10)
 
 		layout_btn = QHBoxLayout()
@@ -425,6 +442,8 @@ class MainWindow(QWidget):
 		layout.addLayout(layout_number, 0, 0, 2, 1)
 		layout.addLayout(layout_options, 0, 1)
 		layout.addLayout(layout_btn, 1, 1)
+		layout.setColumnStretch(0, 1)
+		layout.setColumnStretch(1, 5)
 		layout.setHorizontalSpacing(30)
 
 		self.ExportOptionsBox = QGroupBox('导出选项')
@@ -1000,15 +1019,18 @@ class MainWindow(QWidget):
 
 	def chk_solution_clicked(self):
 		self.chk_follow.setEnabled(self.chk_solution.isChecked())
+		self.setoptions()
 
 	def chk_white_clicked(self):
 		if self.chk_white.isChecked():
 			self.chk_follow.setChecked(False)
+		self.setoptions()
 
 	def chk_follow_clicked(self):
 		if self.chk_follow.isChecked():
 			self.chk_white.setChecked(False)
-
+		self.setoptions()
+	
 	def tree_sections_clicked(self):
 		currentItem = self.tree_sections.currentItem()
 		if currentItem.parent() == None: # 如果点击的是章
@@ -1290,89 +1312,41 @@ class MainWindow(QWidget):
 		for i in self.selected_sectionsid_in_BrowseBox:
 			sectionstring = sectionstring + ' or section=' + str(i)
 		# 读单选题表
-		searchstring = ('select "question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source" from schoice' + sectionstring)
-		schoice = mydb.search(searchstring)
-		num_schoice = len(schoice)
+		searchstring = ('select "id" from schoice' + sectionstring)
+		searchresult = mydb.search(searchstring)
+		schoiceid = [i[0] for i in searchresult]
+		num_schoice = len(schoiceid)
 		# 读多选题表
-		searchstring = ('select "question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source" from mchoice' + sectionstring)
-		mchoice = mydb.search(searchstring)
-		num_mchoice = len(mchoice)
+		searchstring = ('select "id" from mchoice' + sectionstring)
+		searchresult = mydb.search(searchstring)
+		mchoiceid = [i[0] for i in searchresult]
+		num_mchoice = len(mchoiceid)
 		# 读判断题表
-		searchstring = ('select "question", "correct", "explain", "section", "difficulty", "source" from tof' + sectionstring)
-		tof = mydb.search(searchstring)
-		num_tof = len(tof)
+		searchstring = ('select "id" from tof' + sectionstring)
+		searchresult = mydb.search(searchstring)
+		tofid = [i[0] for i in searchresult]
+		num_tof = len(tofid)
 		# 读填空题表
-		searchstring = ('select "question", "answer1", "answer2", "answer3", "answer4", "explain", "section", "difficulty", "source" from blank' + sectionstring)
-		blank = mydb.search(searchstring)
-		num_blank = len(blank)
+		searchstring = ('select "id" from blank' + sectionstring)
+		searchresult = mydb.search(searchstring)
+		blankid = [i[0] for i in searchresult]
+		num_blank = len(blankid)
 		# 读计算题表
-		searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation' + sectionstring)
-		calculation = mydb.search(searchstring)
-		num_calculation = len(calculation)
+		searchstring = ('select "id" from calculation' + sectionstring)
+		searchresult = mydb.search(searchstring)
+		calculationid = [i[0] for i in searchresult]
+		num_calculation = len(calculationid)
 		# 读证明题表
-		searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof' + sectionstring)
-		proof = mydb.search(searchstring)
-		num_proof = len(proof)
+		searchstring = ('select "id" from proof' + sectionstring)
+		searchresult = mydb.search(searchstring)
+		proofid = [i[0] for i in searchresult]
+		num_proof = len(proofid)
 
-		if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
-			self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width()))
-			return
+		# if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
+		# 	self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width()))
+		# 	return
 		
-		pageSourceContent = ''
-		# 写入单选题
-		if self.chk_schoice_in_BrowseBox.isChecked():
-			if num_schoice>0:
-				pageSourceContent += ('</p><h2>单选题</h2>')
-				for i in range(num_schoice):
-					thisquestion = [j for j in schoice[i]]
-					questionstring = myfun.format_questiondata_to_html(thisquestion, '单选题', str(i+1), fromdatabase=1)
-					pageSourceContent += questionstring
-
-		# 写入多选题
-		if self.chk_mchoice_in_BrowseBox.isChecked():
-			if num_mchoice>0:
-				pageSourceContent += ('</p><h2>多选题</h2>')
-				for i in range(num_mchoice):
-					thisquestion = [j for j in mchoice[i]]
-					questionstring = myfun.format_questiondata_to_html(thisquestion, '多选题', str(i+1), fromdatabase=1)
-					pageSourceContent += questionstring
-
-		# 写入判断题
-		if self.chk_tof_in_BrowseBox.isChecked():
-			if num_tof>0:
-				pageSourceContent += ('</p><h2>判断题</h2>')
-				answertext = ['错误', '正确']
-				for i in range(num_tof):
-					thisquestion = [j for j in tof[i]]
-					questionstring = myfun.format_questiondata_to_html(thisquestion, '判断题', str(i+1), fromdatabase=1)
-					pageSourceContent += questionstring
-
-		# 写入填空题
-		if self.chk_blank_in_BrowseBox.isChecked():
-			if num_blank>0:
-				pageSourceContent += ('</p><h2>填空题</h2>')
-				for i in range(num_blank):
-					thisquestion = [j for j in blank[i]]
-					questionstring = myfun.format_questiondata_to_html(thisquestion, '填空题', str(i+1), fromdatabase=1)
-					pageSourceContent += questionstring
-
-		# 写入计算题
-		if self.chk_calculation_in_BrowseBox.isChecked():
-			if num_calculation>0:
-				pageSourceContent += ('</p><h2>计算题</h2>')
-				for i in range(num_calculation):
-					thisquestion = [j for j in calculation[i]]
-					questionstring = myfun.format_questiondata_to_html(thisquestion, '计算题', str(i+1), fromdatabase=1)
-					pageSourceContent += questionstring
-
-		# 写入证明题
-		if self.chk_proof_in_BrowseBox.isChecked():
-			if num_proof>0:
-				pageSourceContent += ('</p><h2>证明题</h2>')
-				for i in range(num_proof):
-					thisquestion = [j for j in proof[i]]
-					questionstring = myfun.format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1)
-					pageSourceContent += questionstring
+		pageSourceContent = myfun.generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
 
 		self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width(), pageSourceContent))
 
@@ -1469,6 +1443,18 @@ class MainWindow(QWidget):
 			i += 1
 		ui.list_source.setCurrentIndex(i)
 	
+	def setoptions(self):
+		self.options['easy'] = self.chk_easy.isChecked()
+		self.options['follow'] = self.chk_follow.isChecked()
+		self.options['hard'] = self.chk_hard.isChecked()
+		self.options['hell'] = self.chk_hell.isChecked()
+		self.options['medium'] = self.chk_medium.isChecked()
+		self.options['notsure'] = self.chk_notsure.isChecked()
+		self.options['random'] = self.chk_random.isChecked()
+		self.options['randomchoice'] = self.chk_randomchoice.isChecked()
+		self.options['white'] = self.chk_white.isChecked()
+		self.options['solution'] = self.chk_solution.isChecked()
+
 	def export_questions_to_latex(self):
 		if not self.selected_sectionids_in_ExportBox:
 			QMessageBox.about(self, u'通知', u'请先选择章节！')
@@ -1524,204 +1510,16 @@ class MainWindow(QWidget):
 		proofid = [i[0] for i in searchresult]
 		num_proof = len(proofid)
 
-		if self.chk_random.isChecked():
-			shuffle(schoiceid)
-			shuffle(mchoiceid)
-			shuffle(tofid)
-			shuffle(calculationid)
-			shuffle(blankid)
-			shuffle(proofid)
-
 		if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
 			QMessageBox.about(self, u'通知', u'当前章节中没有题目！')
 			return
 		
-		try:
-			filename = ('questions[%s]' % QDateTime.currentDateTime().toString(Qt.ISODate).replace(':','-'))
-			filepath = ('%s/exports/%s.tex' % (QDir.currentPath(), filename))
-			f = open(filepath, 'w', encoding='utf-8')
-			# 写入单选题
-			if num_schoice>0:
-				f.writelines('\\section{单项选择题}\n')
-				f.writelines('\\begin{enumerate}\n')
-				for i in range(num_schoice):
-					schoice = mydb.get_schoice_by_id(schoiceid[i])
-					f.writelines('\t\\item ')
-					self.write_schoice_question(f, schoice)
-					if self.chk_follow.isChecked():
-						f.writelines('\t\t答案：')
-						self.write_schoice_solution(f, schoice)
-				f.writelines('\\end{enumerate}\n')
-			# 写入多选题
-			if num_mchoice>0:
-				f.writelines('\\section{多项选择题}\n')
-				f.writelines('\\begin{enumerate}\n')
-				for i in range(num_mchoice):
-					mchoiceid = mydb.get_mchoice_by_id(mchoiceid[i])
-					f.writelines('\t\\item ')
-					self.write_schoice_question(f, mchoice)
-					if self.chk_follow.isChecked():
-						f.writelines('\t\t答案：')
-						self.write_mchoice_solution(f, mchoice)
-				f.writelines('\\end{enumerate}\n')
-			# 写入判断题
-			if num_tof>0:
-				f.writelines('\\section{判断题}\n')
-				f.writelines('\\begin{enumerate}\n')
-				for i in range(num_tof):
-					tof = mydb.get_tof_by_id(tofid[i])
-					f.writelines('\t\\item ')
-					self.write_tof_question(f, tof)
-					if self.chk_follow.isChecked():
-						f.writelines('\t\t答案：')
-						self.write_tof_solution(f, tof)
-				f.writelines('\\end{enumerate}\n')
-			# 写入填空题
-			if num_blank>0:
-				f.writelines('\\section{填空题}\n')
-				f.writelines('\\begin{enumerate}\n')
-				for i in range(num_blank):
-					blank = mydb.get_blank_by_id(blankid[i])
-					f.writelines('\t\\item ')
-					self.write_blank_question(f, blank)
-					if self.chk_follow.isChecked():
-						if blank[0][-1] != '}':
-							f.writelines('\\\\')
-						f.writelines('\n\t\t答案：')
-						self.write_blank_solution(f, blank)
-					else:
-						f.writelines('\n')
-				f.writelines('\\end{enumerate}\n')
-			# 写入计算题
-			if num_calculation>0:
-				f.writelines('\\section{计算题}\n')
-				f.writelines('\\begin{enumerate}\n')
-				for i in range(num_calculation):
-					calculation = mydb.get_calculation_by_id(calculationid[i])
-					f.writelines('\t\\item ')
-					self.write_calculation_question(f, calculation)
-					if self.chk_follow.isChecked():
-						if calculation[0][-1] != '}':
-							f.writelines('\\\\')
-						f.writelines('\n')
-						self.write_calculation_soltuion(f, calculation)
-					elif self.chk_white.isChecked():
-						f.writelines('\\vspace{4.7cm}\n')
-					else:
-						f.writelines('\n')
-				f.writelines('\\end{enumerate}\n')
-			# 写入证明题
-			if num_proof>0:
-				f.writelines('\\section{证明题}\n')
-				f.writelines('\\begin{enumerate}\n')
-				for i in range(num_proof):
-					proof = mydb.get_proof_by_id(proofid[i])
-					f.writelines('\t\\item ')
-					self.write_proof_question(f, proof)
-					if self.chk_follow.isChecked():
-						if proof[0][-1] != '}':
-							f.writelines('\\\\')
-						f.writelines('\n')
-						self.write_proof_soltuion(f, proof)
-					elif self.chk_white.isChecked():
-						f.writelines('\\vspace{4cm}\n')
-					else:
-						f.writelines('\n')
-				f.writelines('\\end{enumerate}\n')
-
-			# 写入解答
-			if self.chk_solution.isChecked() and (not self.chk_follow.isChecked()):
-				# 单选题解答
-				if num_schoice>0:
-					f.writelines('\\section{单项选择题解答}\n')
-					f.writelines('\\begin{enumerate}\n')
-					for i in range(num_schoice):
-						schoice = mydb.get_schoice_by_id(schoiceid[i])
-						f.writelines('\t\\item ')
-						self.write_schoice_solution(f, schoice)
-					f.writelines('\\end{enumerate}\n')
-				# 多选题解答
-				if num_mchoice>0:
-					f.writelines('\\section{多项选择题解答}\n')
-					f.writelines('\\begin{enumerate}\n')
-					for i in range(num_mchoice):
-						mchoiceid = mydb.get_mchoice_by_id(mchoiceid[i])
-						f.writelines('\t\\item ')
-						self.write_schoice_solution(f, mchoice)
-					f.writelines('\\end{enumerate}\n')
-				# 判断题解答
-				if num_tof>0:
-					f.writelines('\\section{判断题解答}\n')
-					f.writelines('\\begin{enumerate}\n')
-					for i in range(num_tof):
-						tof = mydb.get_tof_by_id(tofid[i])
-						f.writelines('\t\\item ')
-						self.write_tof_solution(f, tof)
-					f.writelines('\\end{enumerate}\n')
-				# 填空题解答
-				if num_blank>0:
-					f.writelines('\\section{填空题解答}\n')
-					f.writelines('\\begin{enumerate}\n')
-					for i in range(num_blank):
-						blank = mydb.get_blank_by_id(blankid[i])
-						f.writelines('\t\\item ')
-						self.write_blank_solution(f, blank)
-					f.writelines('\\end{enumerate}\n')
-				# 计算题解答
-				if num_calculation>0:
-					f.writelines('\\section{计算题解答}\n')
-					f.writelines('\\begin{enumerate}\n')
-					for i in range(num_calculation):
-						calculation = mydb.get_calculation_by_id(calculationid[i])
-						f.writelines('\t\\item ')
-						self.write_calculation_soltuion(f, calculation)
-					f.writelines('\\end{enumerate}\n')
-				# 证明题解答
-				if num_proof>0:
-					f.writelines('\\section{证明题解答}\n')
-					f.writelines('\\begin{enumerate}\n')
-					for i in range(num_proof):
-						proof = mydb.get_proof_by_id(proofid[i])
-						f.writelines('\t\\item ')
-						self.write_proof_soltuion(f, proof)
-					f.writelines('\\end{enumerate}\n')
-			f.close()
-			self.export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
-			QMessageBox.about(self, u'通知', (u'导出文件 %s.tex 成功！' % (filename)))
-		except Exception as e:
-			print(e)
+		result = myfun.export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
+		if result[0]:
+			QMessageBox.about(self, u'通知', (u'导出文件 %s.tex 成功！' % (result[1])))
+		else:
 			QMessageBox.about(self, u'错误', u'导出失败！')
-			return
-
-	def export_questions_to_html(self):
-		pass
-
-	def export_questionid(self,filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid):
-		try:
-			filepath = ('%s/exports/%s(id).txt' % (QDir.currentPath(), filename))
-			f = open(filepath, 'w', encoding='utf-8')
-			f.writelines('[schoice]\n')
-			for i in schoiceid:
-				f.writelines('%d\n' % (i))
-			f.writelines('[mchoice]\n')
-			for i in mchoiceid:
-				f.writelines('%d\n' % (i))
-			f.writelines('[tof]\n')
-			for i in tofid:
-				f.writelines('%d\n' % (i))
-			f.writelines('[blank]\n')
-			for i in blankid:
-				f.writelines('%d\n' % (i))
-			f.writelines('[calculation]\n')
-			for i in calculationid:
-				f.writelines('%d\n' % (i))
-			f.writelines('[proof]\n')
-			for i in proofid:
-				f.writelines('%d\n' % (i))
-			f.close()
-		except Exception as e:
-			print(e)
-			return
+			print(result[1])
 
 	# 调整窗口大小事件
 	def resizeEvent(self, event):#调整窗口尺寸时，该方法被持续调用。event参数包含QResizeEvent类的实例，通过该类的下列方法获得窗口信息：
@@ -1729,104 +1527,68 @@ class MainWindow(QWidget):
 		self.update_preview_in_ModifyBox()
 		self.update_preview_in_SelectQuestionBox()
 
-	def write_schoice_question(self, f, schoice):
-		f.writelines('%s\n' % (schoice[0]))
-		maxlen = max(myfun.mathlength(schoice[1]), myfun.mathlength(schoice[2]), myfun.mathlength(schoice[3]), myfun.mathlength(schoice[4]))
-		para = 4
-		if maxlen > 30:
-			para = 1
-		elif maxlen > 12:
-			para = 2
-		f.writelines('\t\t\\begin{choice}(%d)\n' % (para))
-		f.writelines('\t\t\t\\choice %s\n' % (schoice[1]))
-		f.writelines('\t\t\t\\choice %s\n' % (schoice[2]))
-		if schoice[3] != '':
-			f.writelines('\t\t\t\\choice %s\n' % (schoice[3]))
-		if schoice[4] != '':
-			f.writelines('\t\t\t\\choice %s\n' % (schoice[4]))
-		f.writelines('\t\t\\end{choice}\n')
-
-	def write_schoice_solution(self, f, schoice):
-		if schoice[6] != '':
-			f.writelines('%s\\\\\n' % (schoice[5]))
-			f.writelines('\t\t解析：%s\n' % (schoice[6]))
+	def export_questions_to_html(self):
+		if not self.selected_sectionids_in_ExportBox:
+			QMessageBox.about(self, u'通知', u'请先选择章节！')
+			return
+		sectionstring = (' where (section=' + str(self.selected_sectionids_in_ExportBox[0]))
+		for i in range(1, len(self.selected_sectionids_in_ExportBox)):
+			sectionstring = sectionstring + ' or section=' + str(self.selected_sectionids_in_ExportBox[i])
+		sectionstring += ')'
+		
+		difficulties = []
+		if self.chk_notsure.isChecked():
+			difficulties.append('1')
+		if self.chk_easy.isChecked():
+			difficulties.append('2')
+		if self.chk_medium.isChecked():
+			difficulties.append('3')
+		if self.chk_hard.isChecked():
+			difficulties.append('4')
+		if self.chk_hell.isChecked():
+			difficulties.append('5')
+		if difficulties:
+			difficultystring = ' and (difficulty =' + ' or difficulty='.join(difficulties) + ')'
 		else:
-			f.writelines('\%s\n' % (schoice[5]))
+			difficultystring = ''
+		# 读单选题表
+		searchstring = ('select "id" from schoice' + sectionstring + difficultystring)
+		searchresult = mydb.search(searchstring)
+		schoiceid = [i[0] for i in searchresult]
+		num_schoice = len(schoiceid)
+		# 读多选题表
+		searchstring = ('select "id" from mchoice' + sectionstring + difficultystring)
+		searchresult = mydb.search(searchstring)
+		mchoiceid = [i[0] for i in searchresult]
+		num_mchoice = len(mchoiceid)
+		# 读判断题表
+		searchstring = ('select "id" from tof' + sectionstring + difficultystring)
+		searchresult = mydb.search(searchstring)
+		tofid = [i[0] for i in searchresult]
+		num_tof = len(tofid)
+		# 读填空题表
+		searchstring = ('select "id" from blank' + sectionstring + difficultystring)
+		searchresult = mydb.search(searchstring)
+		blankid = [i[0] for i in searchresult]
+		num_blank = len(blankid)
+		# 读计算题表
+		searchstring = ('select "id" from calculation' + sectionstring + difficultystring)
+		searchresult = mydb.search(searchstring)
+		calculationid = [i[0] for i in searchresult]
+		num_calculation = len(calculationid)
+		# 读证明题表
+		searchstring = ('select "id" from proof' + sectionstring + difficultystring)
+		searchresult = mydb.search(searchstring)
+		proofid = [i[0] for i in searchresult]
+		num_proof = len(proofid)
 
-	def write_mchoice_question(self, f, mchoice):
-		f.writelines('%s\n' % (mchoice[0]))
-		maxlen = max(myfun.mathlength(mchoice[1]), myfun.mathlength(mchoice[2]), myfun.mathlength(mchoice[3]), myfun.mathlength(mchoice[4]))
-		para = 4
-		if maxlen > 30:
-			para = 1
-		elif maxlen > 12:
-			para = 2
-		f.writelines('\t\t\\begin{choice}(4)\n')
-		f.writelines('\t\t\t\\choice %s\n' % (mchoice[1]))
-		f.writelines('\t\t\t\\choice %s\n' % (mchoice[2]))
-		if schoice[i][3] != '':
-			f.writelines('\t\t\t\\choice %s\n' % (schoice[i][3]))
-		if schoice[i][4] != '':
-			f.writelines('\t\t\t\\choice %s\n' % (schoice[i][4]))
-		f.writelines('\t\t\\end{choice}\n')
-
-	def write_mchoice_solution(self, f, mchoice):
-		answer = ''
-		answer_raw = mchoice[5:9]
-		for j in range(1, max(answer_raw)+1):
-			thisanswer = ''
-			for k in range(4):
-				if answer_raw[k] == j:
-					thisanswer = thisanswer + chr(k+65)
-			answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
-		if mchoice[9] != '':
-			f.writelines('%s\\\\\n' % (answer))
-			f.writelines('\t\t解析：%s\n' % (mchoice[9]))
+		if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
+			QMessageBox.about(self, u'通知', u'当前章节中没有题目！')
+			return
+		
+		result = myfun.export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
+		if result[0]:
+			QMessageBox.about(self, u'通知', (u'导出文件 %s.html 成功！' % (result[1])))
 		else:
-			f.writelines('%s\n' % (answer))
-
-	def write_tof_question(self, f, tof):
-		f.writelines('%s \\hfill\\emptychoice\n' % (tof[0]))
-
-	def write_tof_solution(self, f, tof):
-		answer = ['错误', '正确']
-		if tof[2] != '':
-			f.writelines('%s\\\\\n' % (answer(tof[1])))
-			f.writelines('\t\t解析：%s\n' % (tof[2]))
-		else:
-			f.writelines('%s\n' % (answer(tof[1])))
-
-	def write_blank_question(self, f, blank):
-		f.writelines('%s' % (blank[0]))
-
-	def write_blank_solution(self, f, blank):
-		if blank[4] != '':
-			f.writelines('第1空：\\underline{%s}；第2空：\\underline{%s}；第3空：\\underline{%s}；第4空：\\underline{%s}' % (blank[1],blank[2],blank[3],blank[4]))
-		elif blank[3] != '':
-			f.writelines('第1空：\\underline{%s}；第2空：\\underline{%s}；第3空：\\underline{%s}' % (blank[1],blank[2],blank[3]))
-		elif blank[2] != '':
-			f.writelines('第1空：\\underline{%s}；第2空：\\underline{%s}' % (blank[1],blank[2]))
-		else:
-			f.writelines('\\underline{%s}' % (blank[1]))
-		if blank[5] != '':
-			f.writelines('\\\\\n\t\t解析：%s\n' % (blank[5]))
-		else:
-			f.writelines('\n')
-
-	def write_calculation_question(self, f, calculation):
-		f.writelines('%s' % (calculation[0]))
-
-	def write_calculation_soltuion(self, f, calculation):
-		if calculation[1] == '':
-			f.writelines('解：略\n')
-		else:
-			f.writelines('解：%s\n' % (calculation[1]))
-
-	def write_proof_question(self, f, proof):
-		f.writelines('%s' % (proof[0]))
-
-	def write_proof_soltuion(self, f, proof):
-		if proof[1] != '':
-			f.writelines('证明：%s\n' % (proof[1]))
-		else:
-			f.writelines('证明：略\n')
+			QMessageBox.about(self, u'错误', u'导出失败！')
+			print(result[1])

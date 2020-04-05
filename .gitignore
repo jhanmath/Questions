@@ -3,11 +3,6 @@ temp/
 __pycache__/
 dist/
 build/
-exports/*.aux
-exports/*.log
-exports/*.pdf
-exports/*.synctex.gz
-myquestions2.tex
-myquestions.tex
+exports/
 db/database.db
 questions.spec

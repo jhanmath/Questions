@@ -246,12 +246,12 @@ class AddSingleChoice(QWidget):
             else:
                 updatestring = ('UPDATE ' + table + ' SET question="%s", A="%s", B="%s", C="%s", D="%s", answer=\'%s\', explain="%s", section=%d, difficulty=%d, source=%d where id=%d;'
                                 % (myfun.format_question_to_latex(self.input_question.toPlainText(), '单选题'),
-                                    + myfun.format_enter_to_latex(self.input_answerA.toPlainText()),
-                                    + myfun.format_enter_to_latex(self.input_answerB.toPlainText()),
-                                    + myfun.format_enter_to_latex(self.input_answerC.toPlainText()),
-                                    + myfun.format_enter_to_latex(self.input_answerD.toPlainText()),
-                                    + self.correct,
-                                    + myfun.format_explain_to_latex(self.input_explain.toPlainText()),
+                                    myfun.format_enter_to_latex(self.input_answerA.toPlainText()),
+                                    myfun.format_enter_to_latex(self.input_answerB.toPlainText()),
+                                    myfun.format_enter_to_latex(self.input_answerC.toPlainText()),
+                                    myfun.format_enter_to_latex(self.input_answerD.toPlainText()),
+                                    self.correct,
+                                    myfun.format_explain_to_latex(self.input_explain.toPlainText()),
                                     self.section_id,
                                     self.difficulty_id,
                                     self.source_id,
