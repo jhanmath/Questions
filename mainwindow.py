@@ -405,7 +405,7 @@ class MainWindow(QWidget):
 		self.chk_hard = QCheckBox('困难')
 		self.chk_hell = QCheckBox('地狱')
 		self.chk_solution.setChecked(True)
-		self.chk_randomchoice.setEnabled(False)
+		# self.chk_randomchoice.setEnabled(False)
 		self.chk_white.setChecked(True)
 		self.chk_follow.setChecked(False)
 		self.chk_notsure.setChecked(True)
@@ -414,8 +414,8 @@ class MainWindow(QWidget):
 		self.chk_hard.setChecked(True)
 		self.chk_hell.setChecked(True)
 		self.chk_solution.clicked.connect(self.chk_solution_clicked)
-		self.chk_white.clicked.connect(self.chk_white_clicked)
-		self.chk_follow.clicked.connect(self.chk_follow_clicked)
+		self.chk_white.clicked.connect(self.setoptions)
+		self.chk_follow.clicked.connect(self.setoptions)
 		self.chk_random.clicked.connect(self.setoptions)
 		self.chk_randomchoice.clicked.connect(self.setoptions)
 		self.chk_notsure.clicked.connect(self.setoptions)
@@ -489,6 +489,8 @@ class MainWindow(QWidget):
 		self.blankid_prepare = [] # 自由选择问题导出标签页中待导出的所有填空题id
 		self.calculationid_prepare = [] # 自由选择问题导出标签页中待导出的所有计算题id
 		self.proofid_prepare = [] # 自由选择问题导出标签页中待导出的所有证明题id
+		self.schoice_choiceseq_prepare = [] # 自由选择问题导出标签页中待导出的所有单选题选项顺序
+		self.mchoice_choiceseq_prepare = [] # 自由选择问题导出标签页中待导出的所有多选题选项顺序
 
 		layout = QGridLayout()
 		self.tree_sections_in_SelectQuestionBox = QTreeWidget()
@@ -961,16 +963,21 @@ class MainWindow(QWidget):
 		except Exception as e:
 			print(e)
 			QMessageBox.about(self, '错误', '读取id出错！')
+			return
 		self.schoiceid_prepare.clear()
+		self.schoice_choiceseq_prepare.clear()
 		self.mchoiceid_prepare.clear()
+		self.mchoice_choiceseq_prepare.clear()
 		self.tofid_prepare.clear()
 		self.blankid_prepare.clear()
 		self.calculationid_prepare.clear()
 		self.proofid_prepare.clear()
 		for i in range(schoice_index+1, mchoice_index):
-			self.schoiceid_prepare.append(int(f_list[i]))
+			items = f_list[i].split(',')
+			self.schoiceid_prepare.append(int(items[0]))
 		for i in range(mchoice_index+1, tof_index):
-			self.mchoiceid_prepare.append(int(f_list[i]))
+			items = f_list[i].split(',')
+			self.mchoiceid_prepare.append(int(items[0]))
 		for i in range(tof_index+1, blank_index):
 			self.tofid_prepare.append(int(f_list[i]))
 		for i in range(blank_index+1, calculation_index):
@@ -1045,15 +1052,15 @@ class MainWindow(QWidget):
 		self.chk_follow.setEnabled(self.chk_solution.isChecked())
 		self.setoptions()
 
-	def chk_white_clicked(self):
-		if self.chk_white.isChecked():
-			self.chk_follow.setChecked(False)
-		self.setoptions()
+	# def chk_white_clicked(self):
+	# 	if self.chk_white.isChecked():
+	# 		self.chk_follow.setChecked(False)
+	# 	self.setoptions()
 
-	def chk_follow_clicked(self):
-		if self.chk_follow.isChecked():
-			self.chk_white.setChecked(False)
-		self.setoptions()
+	# def chk_follow_clicked(self):
+	# 	if self.chk_follow.isChecked():
+	# 		self.chk_white.setChecked(False)
+	# 	self.setoptions()
 	
 	def ed_num_changed(self):
 		if self.sender().text() == '':
@@ -1385,7 +1392,7 @@ class MainWindow(QWidget):
 		# 	self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width()))
 		# 	return
 		
-		pageSourceContent = myfun.generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
+		pageSourceContent,_,_ = myfun.generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
 
 		self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width(), pageSourceContent))
 
@@ -1631,7 +1638,12 @@ class MainWindow(QWidget):
 					break
 		questionid = []
 		for i in range(len(id_by_sections)):
-			ids = random.sample(id_by_sections[i], num_id_by_sections[i])
+			ids = id_by_sections[i]
+			diff = len(ids)-num_id_by_sections[i]
+			for j in range(diff):
+				index = random.randint(0,len(ids)-1)
+				ids.pop(index)
 			for j in ids:
 				questionid.append(j)
 		return questionid
+	

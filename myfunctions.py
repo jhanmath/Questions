@@ -4,6 +4,7 @@ from PyQt5.QtCore import QDir
 import regex
 from random import shuffle
 from datetime import datetime
+import random
 import latex
 import database as mydb
 
@@ -356,7 +357,7 @@ def format_enter_to_latex(text): # 将latex环境以外的回车改为\\+回车
 def find_text_enter(text):
     pass
 
-def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options):
+def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq=[],mchoice_choiceseq=[]):
     if options['random']:
         shuffle(schoiceid)
         shuffle(mchoiceid)
@@ -376,20 +377,50 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
         filepath = ('%s/exports/%s.tex' % (QDir.currentPath(), filename))
         f = open(filepath, 'w', encoding='utf-8')
         f.writelines(latex.docclass)
-        f.writelines(latex.preamble)
+        if (not options['follow']) and (options['white']):
+            f.writelines(latex.preamble.replace('\\usetag{sol}','\\usetag{nosol}'))
+        else:
+            f.writelines(latex.preamble)
         f.writelines(latex.title)
         f.writelines(latex.begindocument)
+        if options['randomchoice']:
+            sequence_type = 1 # 重新随机生成排列选项
+            schoice_choiceseq_new = []
+            mchoice_choiceseq_new = []
+        else:
+            if schoice_choiceseq == [] and mchoice_choiceseq == []:
+                sequence_type = 0 # 不随机排列选项
+                schoice_choiceseq_new = []
+                mchoice_choiceseq_new = []
+            else:
+                sequence_type = 2 # 使用导入的随机排列选项，不需要重新生成
+                schoice_choiceseq_new = schoice_choiceseq
+                mchoice_choiceseq_new = mchoice_choiceseq
         # 写入单选题
         if num_schoice>0:
             f.writelines('\\section{单项选择题}\n')
             f.writelines('\\begin{enumerate}\n')
             for i in range(num_schoice):
-                schoice = mydb.get_schoice_by_id(schoiceid[i])
+                thisquestion = mydb.get_schoice_by_id(schoiceid[i])
+                num_of_choices = 2
+                while num_of_choices <4 and thisquestion[num_of_choices+1] != '':
+                    num_of_choices += 1
+
+                if sequence_type == 1: # 重新随机生成排列选项
+                    sequence = generate_random_choice(num_of_choices)
+                    schoice_choiceseq_new.append(sequence)
+                elif sequence_type == 2: # 采用已有排列
+                    sequence = schoice_choiceseq[i]
+                elif sequence_type == 0:
+                    schoice_choiceseq_new.append(j for j in range(1,num_of_choices+1))
+                if sequence_type == 1 or sequence_type == 2:    
+                    thisquestion = make_choices_random(thisquestion, sequence, '单选题')
+                
                 f.writelines('\t\\item ')
-                write_schoice_question(f, schoice)
+                write_schoice_question(f, thisquestion)
                 if options['follow']:
                     f.writelines('\t\t\\tagged{sol}{答案：')
-                    write_schoice_solution(f, schoice)
+                    write_schoice_solution(f, thisquestion)
                     f.writelines('\t\t}')
             f.writelines('\\end{enumerate}\n')
         # 写入多选题
@@ -397,12 +428,26 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
             f.writelines('\\section{多项选择题}\n')
             f.writelines('\\begin{enumerate}\n')
             for i in range(num_mchoice):
-                mchoiceid = mydb.get_mchoice_by_id(mchoiceid[i])
+                thisquestion = mydb.get_mchoice_by_id(mchoiceid[i])
+                num_of_choices = 2
+                while num_of_choices <4 and thisquestion[num_of_choices+1] != '':
+                    num_of_choices += 1
+
+                if sequence_type == 1: # 生成选项排列
+                    sequence = generate_random_choice(num_of_choices)
+                    mchoice_choiceseq_new.append(sequence)
+                elif sequence_type == 2: # 采用已有排列
+                    sequence = mchoice_choiceseq[i]
+                elif sequence_type == 0:
+                    mchoice_choiceseq_new.append(j for j in range(1,num_of_choices+1))
+                if sequence_type == 1 or sequence_type == 2:
+                    thisquestion = make_choices_random(thisquestion, sequence, '多选题')
+                    
                 f.writelines('\t\\item ')
-                write_schoice_question(f, mchoice)
+                write_schoice_question(f, thisquestion)
                 if options['follow']:
                     f.writelines('\t\t\\tagged{sol}{答案：')
-                    write_mchoice_solution(f, mchoice)
+                    write_mchoice_solution(f, thisquestion)
                     f.writelines('\t\t}')
             f.writelines('\\end{enumerate}\n')
         # 写入判断题
@@ -410,12 +455,12 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
             f.writelines('\\section{判断题}\n')
             f.writelines('\\begin{enumerate}\n')
             for i in range(num_tof):
-                tof = mydb.get_tof_by_id(tofid[i])
+                thisquestion = mydb.get_tof_by_id(tofid[i])
                 f.writelines('\t\\item ')
-                write_tof_question(f, tof)
+                write_tof_question(f, thisquestion)
                 if options['follow']:
                     f.writelines('\t\t\\tagged{sol}{答案：')
-                    write_tof_solution(f, tof)
+                    write_tof_solution(f, thisquestion)
                     f.writelines('\t\t}')
             f.writelines('\\end{enumerate}\n')
         # 写入填空题
@@ -423,14 +468,14 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
             f.writelines('\\section{填空题}\n')
             f.writelines('\\begin{enumerate}\n')
             for i in range(num_blank):
-                blank = mydb.get_blank_by_id(blankid[i])
+                thisquestion = mydb.get_blank_by_id(blankid[i])
                 f.writelines('\t\\item ')
-                write_blank_question(f, blank)
+                write_blank_question(f, thisquestion)
                 if options['follow']:
-                    if blank[0][-1] != '}':
+                    if thisquestion[0][-1] != '}':
                         f.writelines('\\\\')
                     f.writelines('\t\t\\tagged{sol}{答案：')
-                    write_blank_solution(f, blank)
+                    write_blank_solution(f, thisquestion)
                     f.writelines('\t\t}')
                 else:
                     f.writelines('\n')
@@ -440,18 +485,18 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
             f.writelines('\\section{计算题}\n')
             f.writelines('\\begin{enumerate}\n')
             for i in range(num_calculation):
-                calculation = mydb.get_calculation_by_id(calculationid[i])
+                thisquestion = mydb.get_calculation_by_id(calculationid[i])
                 f.writelines('\t\\item ')
-                write_calculation_question(f, calculation)
+                write_calculation_question(f, thisquestion)
                 if options['follow']:
                     f.writelines('\t\t\\tagged{sol}{')
-                    if calculation[0][-1] != '}':
+                    if thisquestion[0][-1] != '}':
                         f.writelines('\\\\')
                     f.writelines('\n')
-                    write_calculation_soltuion(f, calculation)
+                    write_calculation_soltuion(f, thisquestion)
                     f.writelines('\t\t}')
-                elif options['white']:
-                    f.writelines('\\vspace{4.8cm}\n')
+                if options['white']:
+                    f.writelines('\\tagged{nosol}{\\vspace{4.8cm}}\n')
                 else:
                     f.writelines('\n')
             f.writelines('\\end{enumerate}\n')
@@ -460,18 +505,18 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
             f.writelines('\\section{证明题}\n')
             f.writelines('\\begin{enumerate}\n')
             for i in range(num_proof):
-                proof = mydb.get_proof_by_id(proofid[i])
+                thisquestion = mydb.get_proof_by_id(proofid[i])
                 f.writelines('\t\\item ')
-                write_proof_question(f, proof)
+                write_proof_question(f, thisquestion)
                 if options['follow']:
                     f.writelines('\t\t\\tagged{sol}{')
-                    if proof[0][-1] != '}':
+                    if thisquestion[0][-1] != '}':
                         f.writelines('\\\\')
                     f.writelines('\n')
-                    write_proof_soltuion(f, proof)
+                    write_proof_soltuion(f, thisquestion)
                     f.writelines('\t\t}')
-                elif options['white']:
-                    f.writelines('\\vspace{4cm}\n')
+                if options['white']:
+                    f.writelines('\\tagged{nosol}{\\vspace{4cm}}\n')
                 else:
                     f.writelines('\n')
             f.writelines('\\end{enumerate}\n')
@@ -484,59 +529,65 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
                 f.writelines('\\section{单项选择题解答}\n')
                 f.writelines('\\begin{enumerate}\n')
                 for i in range(num_schoice):
-                    schoice = mydb.get_schoice_by_id(schoiceid[i])
+                    thisquestion = mydb.get_schoice_by_id(schoiceid[i])
+                    if sequence_type == 1 or sequence_type == 2:
+                        sequence = schoice_choiceseq_new[i]
+                        thisquestion = make_choices_random(thisquestion, sequence, '单选题')
                     f.writelines('\t\\item ')
-                    write_schoice_solution(f, schoice)
+                    write_schoice_solution(f, thisquestion)
                 f.writelines('\\end{enumerate}\n')
             # 多选题解答
             if num_mchoice>0:
                 f.writelines('\\section{多项选择题解答}\n')
                 f.writelines('\\begin{enumerate}\n')
                 for i in range(num_mchoice):
-                    mchoiceid = mydb.get_mchoice_by_id(mchoiceid[i])
+                    thisquestion = mydb.get_mchoice_by_id(mchoiceid[i])
+                    if sequence_type == 1 or sequence_type == 2:
+                        sequence = mchoice_choiceseq_new[i]
+                        thisquestion = make_choices_random(thisquestion, sequence, '多选题')
                     f.writelines('\t\\item ')
-                    write_schoice_solution(f, mchoice)
+                    write_schoice_solution(f, thisquestion)
                 f.writelines('\\end{enumerate}\n')
             # 判断题解答
             if num_tof>0:
                 f.writelines('\\section{判断题解答}\n')
                 f.writelines('\\begin{enumerate}\n')
                 for i in range(num_tof):
-                    tof = mydb.get_tof_by_id(tofid[i])
+                    thisquestion = mydb.get_tof_by_id(tofid[i])
                     f.writelines('\t\\item ')
-                    write_tof_solution(f, tof)
+                    write_tof_solution(f, thisquestion)
                 f.writelines('\\end{enumerate}\n')
             # 填空题解答
             if num_blank>0:
                 f.writelines('\\section{填空题解答}\n')
                 f.writelines('\\begin{enumerate}\n')
                 for i in range(num_blank):
-                    blank = mydb.get_blank_by_id(blankid[i])
+                    thisquestion = mydb.get_blank_by_id(blankid[i])
                     f.writelines('\t\\item ')
-                    write_blank_solution(f, blank)
+                    write_blank_solution(f, thisquestion)
                 f.writelines('\\end{enumerate}\n')
             # 计算题解答
             if num_calculation>0:
                 f.writelines('\\section{计算题解答}\n')
                 f.writelines('\\begin{enumerate}\n')
                 for i in range(num_calculation):
-                    calculation = mydb.get_calculation_by_id(calculationid[i])
+                    thisquestion = mydb.get_calculation_by_id(calculationid[i])
                     f.writelines('\t\\item ')
-                    write_calculation_soltuion(f, calculation)
+                    write_calculation_soltuion(f, thisquestion)
                 f.writelines('\\end{enumerate}\n')
             # 证明题解答
             if num_proof>0:
                 f.writelines('\\section{证明题解答}\n')
                 f.writelines('\\begin{enumerate}\n')
                 for i in range(num_proof):
-                    proof = mydb.get_proof_by_id(proofid[i])
+                    thisquestion = mydb.get_proof_by_id(proofid[i])
                     f.writelines('\t\\item ')
-                    write_proof_soltuion(f, proof)
+                    write_proof_soltuion(f, thisquestion)
                 f.writelines('\\end{enumerate}\n')
             f.writelines('}')
         f.writelines(latex.enddocument)
         f.close()
-        id_file_result = export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
+        id_file_result = export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,schoice_choiceseq_new,mchoice_choiceseq_new)
         return 1, filename
     except Exception as e:
         return 0, e
@@ -661,7 +712,7 @@ def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,optio
     try:
         filename = ('questions[%s]' % datetime.now().strftime('%Y-%m-%dT%H-%M-%S'))
         filepath = ('%s/exports/%s.html' % (QDir.currentPath(), filename))
-        pageSourceContent = generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options)
+        pageSourceContent, schoice_choiceseq, mchoice_choiceseq = generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options)
         html_source = gethtml(100, pageSourceContent)
         html_source = regex.sub(
             r'<script type="text\/javascript" id="MathJax-script" async src=".*"><\/script>',
@@ -676,21 +727,23 @@ def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,optio
         f = open(filepath, 'w', encoding='utf-8')
         f.writelines(html_source)
         f.close()
-        id_file_result = export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
+        id_file_result = export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,schoice_choiceseq,mchoice_choiceseq)
         return 1, filename
     except Exception as e:
         return 0, e
 
-def export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid):
+def export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,schoice_choiceseq,mchoice_choiceseq):
     try:
         filepath = ('%s/exports/%s(id).txt' % (QDir.currentPath(), filename))
         f = open(filepath, 'w', encoding='utf-8')
         f.writelines('[schoice]\n')
-        for i in schoiceid:
-            f.writelines('%d\n' % (i))
+        for i in range(len(schoiceid)):
+            f.writelines('%d,' % (schoiceid[i]))
+            f.writelines('%s\n' % (','.join([str(j) for j in schoice_choiceseq[i]])))
         f.writelines('[mchoice]\n')
-        for i in mchoiceid:
-            f.writelines('%d\n' % (i))
+        for i in range(len(mchoiceid)):
+            f.writelines('%d,' % (mchoiceid[i]))
+            f.writelines('%s\n' % (','.join([str(j) for j in mchoice_choiceseq[i]])))
         f.writelines('[tof]\n')
         for i in tofid:
             f.writelines('%d\n' % (i))
@@ -709,7 +762,7 @@ def export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,p
         print(e)
         return 0
 
-def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'solution':True}):
+def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'solution':True, 'randomchoice': False},schoice_choiceseq=[],mchoice_choiceseq=[]):
     num_schoice = len(schoiceid)
     num_mchoice = len(mchoiceid)
     num_tof = len(tofid)
@@ -719,12 +772,39 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
     pageSourceContent = ''
     chinese_num = ['一','二','三','四','五','六','七','八','九','十','十一','十二']
     sec = -1
+    if options['randomchoice']:
+        sequence_type = 1 # 重新随机生成排列选项
+        schoice_choiceseq_new = []
+        mchoice_choiceseq_new = []
+    else:
+        if schoice_choiceseq == [] and mchoice_choiceseq == []:
+            sequence_type = 0 # 不随机排列选项
+            schoice_choiceseq_new = []
+            mchoice_choiceseq_new = []
+        else:
+            sequence_type = 2 # 使用导入的随机排列选项，不需要重新生成
+            schoice_choiceseq_new = schoice_choiceseq
+            mchoice_choiceseq_new = mchoice_choiceseq
     # 写入单选题
     if num_schoice>0:
         sec += 1
         pageSourceContent += ('<h2>%s、单选题</h2>' % (chinese_num[sec]))
         for i in range(num_schoice):
             thisquestion = mydb.get_schoice_by_id(schoiceid[i])
+            num_of_choices = 2
+            while num_of_choices <4 and thisquestion[num_of_choices+1] != '':
+                num_of_choices += 1
+
+            if sequence_type == 1: # 重新随机生成排列选项
+                sequence = generate_random_choice(num_of_choices)
+                schoice_choiceseq_new.append(sequence)
+            elif sequence_type == 2: # 采用已有排列
+                sequence = schoice_choiceseq[i]
+            elif sequence_type == 0:
+                schoice_choiceseq_new.append(j for j in range(1,num_of_choices+1))
+            if sequence_type == 1 or sequence_type == 2:    
+                thisquestion = make_choices_random(thisquestion, sequence, '单选题')
+            
             pageSourceContent += format_questiondata_to_html(thisquestion, '单选题', str(i+1), fromdatabase=1,output_type=1)
             if options['follow']:
                 pageSourceContent += format_questiondata_to_html(thisquestion, '单选题', fromdatabase=1,output_type=2)
@@ -734,6 +814,20 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
         pageSourceContent += ('<h2>%s、多选题</h2>' % (chinese_num[sec]))
         for i in range(num_mchoice):
             thisquestion = mydb.get_mchoice_by_id(mchoiceid[i])
+            num_of_choices = 2
+            while num_of_choices <4 and thisquestion[num_of_choices+1] != '':
+                num_of_choices += 1
+
+            if sequence_type == 1: # 生成选项排列
+                sequence = generate_random_choice(num_of_choices)
+                mchoice_choiceseq_new.append(sequence)
+            elif sequence_type == 2: # 采用已有排列
+                sequence = mchoice_choiceseq[i]
+            elif sequence_type == 0:
+                mchoice_choiceseq_new.append(j for j in range(1,num_of_choices+1))
+            if sequence_type == 1 or sequence_type == 2:
+                thisquestion = make_choices_random(thisquestion, sequence, '多选题')
+
             pageSourceContent += format_questiondata_to_html(thisquestion, '多选题', str(i+1), fromdatabase=1,output_type=1)
             if options['follow']:
                 pageSourceContent += format_questiondata_to_html(thisquestion, '多选题', fromdatabase=1,output_type=2)
@@ -764,7 +858,7 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
             pageSourceContent += format_questiondata_to_html(thisquestion, '计算题', str(i+1), fromdatabase=1,output_type=1)
             if options['follow']:
                 pageSourceContent += format_questiondata_to_html(thisquestion, '计算题', fromdatabase=1,output_type=2)
-            elif options['white']:
+            if options['white']:
                 pageSourceContent += ''.join(['</br>' for i in range(8)])
     # 写入证明题
     if num_proof>0:
@@ -775,7 +869,7 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
             pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', fromdatabase=1,output_type=1)
             if options['follow']:
                 pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1,output_type=2)
-            elif options['white']:
+            if options['white']:
                 pageSourceContent += ''.join(['</br>' for i in range(8)])
 
     # 单独写入解答
@@ -786,6 +880,9 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
             pageSourceContent += ('<h2>%s、单选题解答</h2>' % (chinese_num[sec]))
             for i in range(num_schoice):
                 thisquestion = mydb.get_schoice_by_id(schoiceid[i])
+                if sequence_type == 1 or sequence_type == 2:
+                    sequence = schoice_choiceseq_new[i]
+                    thisquestion = make_choices_random(thisquestion, sequence, '单选题')
                 pageSourceContent += format_questiondata_to_html(thisquestion, '单选题', str(i+1), fromdatabase=1,output_type=2)
         # 写入多选题
         if num_mchoice>0:
@@ -793,6 +890,9 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
             pageSourceContent += ('<h2>%s、多选题解答</h2>' % (chinese_num[sec]))
             for i in range(num_mchoice):
                 thisquestion = mydb.get_mchoice_by_id(mchoiceid[i])
+                if sequence_type == 1 or sequence_type == 2:
+                    sequence = mchoice_choiceseq_new[i]
+                    thisquestion = make_choices_random(thisquestion, sequence, '多选题')
                 pageSourceContent += format_questiondata_to_html(thisquestion, '多选题', str(i+1), fromdatabase=1,output_type=2)
         # 写入判断题
         if num_tof>0:
@@ -823,4 +923,28 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
                 thisquestion = mydb.get_proof_by_id(proofid[i])
                 pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1,output_type=2)
 
-    return pageSourceContent
+    return pageSourceContent, schoice_choiceseq_new, mchoice_choiceseq_new
+
+def generate_random_choice(num):
+    choice = [i for i in range(1,num+1)]
+    random.shuffle(choice)
+    return choice
+
+def make_choices_random(question, sequence, question_type):
+    # 根据sequence改变选项位置，例如: [4,1,2,3]表示把原来的第4个选项放在第1个，原来的第1个选项放第2个，依次类推
+    thisquestion = question
+    num_of_choices = len(sequence)
+    if question_type == '单选题':
+        choices = thisquestion[1:num_of_choices+1]
+        for j in range(num_of_choices):
+            thisquestion[1+j] = choices[sequence[j]-1]
+        answer = thisquestion[5]
+        thisquestion[5]=chr(sequence.index(ord(answer)-64)+1 + 64)
+    elif question_type == '多选题':
+        choices = thisquestion[1:num_of_choices+1]
+        for j in range(num_of_choices):
+            thisquestion[1+j] = choices[sequence[j]-1]
+        answer = thisquestion[5:5+num_of_choices]
+        for j in range(num_of_choices):
+            thisquestion[j+5]=answer[sequence[j]-1]
+    return thisquestion

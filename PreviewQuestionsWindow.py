@@ -45,7 +45,7 @@ class PreviewQuestions(QWidget):
         num_proof = len(self.proofid)
         self.webView = QWebEngineView()
         self.webView.setContextMenuPolicy(0) # 禁止右键菜单
-        self.pageSourceContent = myfun.generate_html_body(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid)
+        self.pageSourceContent,_,_ = myfun.generate_html_body(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid)
 
         self.webView.setHtml(myfun.gethtml(self.webView.width(), self.pageSourceContent))
         
@@ -67,7 +67,7 @@ class PreviewQuestions(QWidget):
         # self.chk_save_id = QCheckBox('保存导出题目id')
         # self.chk_save_id.setToolTip('保存导出的题目id，可以在自由选题导出标签页读取')
         self.chk_solution.setChecked(True)
-        self.chk_randomchoice.setEnabled(False)
+        # self.chk_randomchoice.setEnabled(False)
         self.chk_white.setChecked(True)
         self.chk_follow.setChecked(False)
         self.chk_notsure.setChecked(True)
@@ -76,8 +76,8 @@ class PreviewQuestions(QWidget):
         self.chk_hard.setChecked(True)
         self.chk_hell.setChecked(True)
         self.chk_solution.clicked.connect(self.chk_solution_clicked)
-        self.chk_white.clicked.connect(self.chk_white_clicked)
-        self.chk_follow.clicked.connect(self.chk_follow_clicked)
+        self.chk_white.clicked.connect(self.setoptions)
+        self.chk_follow.clicked.connect(self.setoptions)
         self.chk_random.clicked.connect(self.setoptions)
         self.chk_randomchoice.clicked.connect(self.setoptions)
         self.chk_notsure.clicked.connect(self.setoptions)
@@ -120,15 +120,15 @@ class PreviewQuestions(QWidget):
         self.chk_follow.setEnabled(self.chk_solution.isChecked())
         self.setoptions()
 
-    def chk_white_clicked(self):
-        if self.chk_white.isChecked():
-            self.chk_follow.setChecked(False)
-        self.setoptions()
+    # def chk_white_clicked(self):
+    #     if self.chk_white.isChecked():
+    #         self.chk_follow.setChecked(False)
+    #     self.setoptions()
 
-    def chk_follow_clicked(self):
-        if self.chk_follow.isChecked():
-            self.chk_white.setChecked(False)
-        self.setoptions()
+    # def chk_follow_clicked(self):
+    #     if self.chk_follow.isChecked():
+    #         self.chk_white.setChecked(False)
+    #     self.setoptions()
             
     def resizeEvent(self, event):
         self.webView.setHtml(myfun.gethtml(self.webView.width(), self.pageSourceContent))
