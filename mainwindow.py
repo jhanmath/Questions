@@ -16,6 +16,7 @@ from AddCalculationWindow import *
 from AddProofWindow import *
 from SelectSectionsWindow import *
 from PreviewQuestionsWindow import *
+import random
 import myfunctions as myfun
 import database as mydb
 
@@ -344,28 +345,40 @@ class MainWindow(QWidget):
 		self.ed_mchoice = QLineEdit('0')
 		self.ed_tof = QLineEdit('0')
 		self.ed_blank = QLineEdit('0')
-		self.ed_calculate = QLineEdit('0')
-		self.ed_prove = QLineEdit('0')
+		self.ed_calculation = QLineEdit('0')
+		self.ed_proof = QLineEdit('0')
 		regex = QRegExp("^[1-9]\d*|0$")
 		validator = QRegExpValidator(regex)
 		self.ed_schoice.setValidator(validator)
 		self.ed_mchoice.setValidator(validator)
 		self.ed_tof.setValidator(validator)
 		self.ed_blank.setValidator(validator)
-		self.ed_calculate.setValidator(validator)
-		self.ed_prove.setValidator(validator)
+		self.ed_calculation.setValidator(validator)
+		self.ed_proof.setValidator(validator)
 		self.ed_schoice.setAlignment(Qt.AlignRight)
 		self.ed_mchoice.setAlignment(Qt.AlignRight)
 		self.ed_tof.setAlignment(Qt.AlignRight)
 		self.ed_blank.setAlignment(Qt.AlignRight)
-		self.ed_calculate.setAlignment(Qt.AlignRight)
-		self.ed_prove.setAlignment(Qt.AlignRight)
+		self.ed_calculation.setAlignment(Qt.AlignRight)
+		self.ed_proof.setAlignment(Qt.AlignRight)
 		self.ed_schoice.setFixedWidth(100)
 		self.ed_mchoice.setFixedWidth(100)
 		self.ed_tof.setFixedWidth(100)
 		self.ed_blank.setFixedWidth(100)
-		self.ed_calculate.setFixedWidth(100)
-		self.ed_prove.setFixedWidth(100)
+		self.ed_calculation.setFixedWidth(100)
+		self.ed_proof.setFixedWidth(100)
+		self.ed_schoice.textChanged.connect(self.ed_num_changed)
+		self.ed_mchoice.textChanged.connect(self.ed_num_changed)
+		self.ed_tof.textChanged.connect(self.ed_num_changed)
+		self.ed_blank.textChanged.connect(self.ed_num_changed)
+		self.ed_calculation.textChanged.connect(self.ed_num_changed)
+		self.ed_proof.textChanged.connect(self.ed_num_changed)
+		self.ed_schoice.installEventFilter(self)
+		self.ed_mchoice.installEventFilter(self)
+		self.ed_tof.installEventFilter(self)
+		self.ed_blank.installEventFilter(self)
+		self.ed_calculation.installEventFilter(self)
+		self.ed_proof.installEventFilter(self)
 		layout_number.addWidget(self.lbl_schoice, 0, 0)
 		layout_number.addWidget(self.lbl_mchoice, 1, 0)
 		layout_number.addWidget(self.lbl_tof, 2, 0)
@@ -376,11 +389,12 @@ class MainWindow(QWidget):
 		layout_number.addWidget(self.ed_mchoice, 1, 1)
 		layout_number.addWidget(self.ed_tof, 2, 1)
 		layout_number.addWidget(self.ed_blank, 3, 1)
-		layout_number.addWidget(self.ed_calculate, 4, 1)
-		layout_number.addWidget(self.ed_prove, 5, 1)
+		layout_number.addWidget(self.ed_calculation, 4, 1)
+		layout_number.addWidget(self.ed_proof, 5, 1)
 
 		layout_options = QGridLayout()
 		self.chk_solution = QCheckBox('包含解答')
+		self.chk_solution.setToolTip('默认在所有题目之后显示')
 		self.chk_random = QCheckBox('打乱题目顺序')
 		self.chk_randomchoice = QCheckBox('选择题选项乱序')
 		self.chk_white = QCheckBox('主观题后留空')
@@ -390,9 +404,6 @@ class MainWindow(QWidget):
 		self.chk_medium = QCheckBox('中等')
 		self.chk_hard = QCheckBox('困难')
 		self.chk_hell = QCheckBox('地狱')
-		# self.chk_distribute = QCheckBox('平均分配各节题目数量')
-		# self.chk_save_id = QCheckBox('保存导出题目id')
-		# self.chk_save_id.setToolTip('保存导出的题目id，可以在自由选题导出标签页读取')
 		self.chk_solution.setChecked(True)
 		self.chk_randomchoice.setEnabled(False)
 		self.chk_white.setChecked(True)
@@ -423,19 +434,17 @@ class MainWindow(QWidget):
 		layout_options.addWidget(self.chk_medium, 2, 1)
 		layout_options.addWidget(self.chk_hard, 3, 1)
 		layout_options.addWidget(self.chk_hell, 4, 1)
-		# layout_options.addWidget(self.chk_distribute, 1, 2)
-		# layout_options.addWidget(self.chk_save_id, 0, 2)
 		layout_options.setHorizontalSpacing(10)
 
 		layout_btn = QHBoxLayout()
 		self.btn_export_to_latex = QPushButton('导出LaTeX')
 		self.btn_export_to_latex.clicked.connect(self.export_questions_to_latex)
-		self.btn_compile = QPushButton('导出并编译')
-		self.btn_compile.setEnabled(False)
+		self.btn_switch = QPushButton('切换至自由选题')
+		self.btn_switch.clicked.connect(self.btn_switch_clicked)
 		self.btn_export_to_html = QPushButton('导出Html')
 		self.btn_export_to_html.clicked.connect(self.export_questions_to_html)
 		layout_btn.addWidget(self.btn_export_to_latex)
-		layout_btn.addWidget(self.btn_compile)
+		layout_btn.addWidget(self.btn_switch)
 		layout_btn.addWidget(self.btn_export_to_html)
 
 		layout = QGridLayout()
@@ -984,6 +993,21 @@ class MainWindow(QWidget):
 		self.preview_ui.createPreview()
 		self.preview_ui.show()
 
+	def btn_switch_clicked(self):
+		[passed,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid]=self.get_questionid_in_ExportbySection()
+		if not passed:
+			return
+		self.schoiceid_prepare = schoiceid
+		self.mchoiceid_prepare = mchoiceid
+		self.tofid_prepare = tofid
+		self.blankid_prepare = blankid
+		self.calculationid_prepare = calculationid
+		self.proofid_prepare = proofid
+		self.update_selectedNum()
+		self.update_checkStatus_in_SelectQuestionBox()
+		self.tabs.setCurrentWidget(self.tab_export_by_question)
+
+
 	def chk_select_in_SelectQuestionBox_clicked(self):
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
 			if self.chk_select_in_SelectQuestionBox.isChecked():
@@ -1031,6 +1055,21 @@ class MainWindow(QWidget):
 			self.chk_white.setChecked(False)
 		self.setoptions()
 	
+	def ed_num_changed(self):
+		if self.sender().text() == '':
+			self.sender().setText('0')
+		pass
+
+	def eventFilter(self, object, event):
+		# 当输入数字时输入框中是0，则删去0，输入数字
+		if object == self.ed_schoice or object == self.ed_mchoice or object == self.ed_tof or object == self.ed_blank or object == self.ed_calculation or object == self.ed_proof:
+			if event.type() == QEvent.KeyPress:
+				key = QKeyEvent(event)
+				if key.key() >=49 and key.key() <=57 and object.text() == '0':
+					object.setText(key.text())
+					return True
+		return QWidget.eventFilter(self, object, event)
+
 	def tree_sections_clicked(self):
 		currentItem = self.tree_sections.currentItem()
 		if currentItem.parent() == None: # 如果点击的是章
@@ -1217,8 +1256,8 @@ class MainWindow(QWidget):
 		self.ed_mchoice.setText(str(total_num_mchoice))
 		self.ed_tof.setText(str(total_num_tof))
 		self.ed_blank.setText(str(total_num_blank))
-		self.ed_calculate.setText(str(total_num_calculation))
-		self.ed_prove.setText(str(total_num_proof))
+		self.ed_calculation.setText(str(total_num_calculation))
+		self.ed_proof.setText(str(total_num_proof))
 
 	def update_preview_in_ModifyBox(self):
 		# print('sectionid:%d,questionid:%d' % (self.sectionid_selected_in_ModifyBox,self.questionid_in_ModifyBox))
@@ -1456,58 +1495,14 @@ class MainWindow(QWidget):
 		self.options['solution'] = self.chk_solution.isChecked()
 
 	def export_questions_to_latex(self):
-		if not self.selected_sectionids_in_ExportBox:
-			QMessageBox.about(self, u'通知', u'请先选择章节！')
+		[passed,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid]=self.get_questionid_in_ExportbySection()
+		if not passed:
 			return
-		sectionstring = (' where (section=' + str(self.selected_sectionids_in_ExportBox[0]))
-		for i in range(1, len(self.selected_sectionids_in_ExportBox)):
-			sectionstring = sectionstring + ' or section=' + str(self.selected_sectionids_in_ExportBox[i])
-		sectionstring += ')'
-		
-		difficulties = []
-		if self.chk_notsure.isChecked():
-			difficulties.append('1')
-		if self.chk_easy.isChecked():
-			difficulties.append('2')
-		if self.chk_medium.isChecked():
-			difficulties.append('3')
-		if self.chk_hard.isChecked():
-			difficulties.append('4')
-		if self.chk_hell.isChecked():
-			difficulties.append('5')
-		if difficulties:
-			difficultystring = ' and (difficulty =' + ' or difficulty='.join(difficulties) + ')'
-		else:
-			difficultystring = ''
-		# 读单选题表
-		searchstring = ('select "id" from schoice' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		schoiceid = [i[0] for i in searchresult]
 		num_schoice = len(schoiceid)
-		# 读多选题表
-		searchstring = ('select "id" from mchoice' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		mchoiceid = [i[0] for i in searchresult]
 		num_mchoice = len(mchoiceid)
-		# 读判断题表
-		searchstring = ('select "id" from tof' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		tofid = [i[0] for i in searchresult]
 		num_tof = len(tofid)
-		# 读填空题表
-		searchstring = ('select "id" from blank' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		blankid = [i[0] for i in searchresult]
 		num_blank = len(blankid)
-		# 读计算题表
-		searchstring = ('select "id" from calculation' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		calculationid = [i[0] for i in searchresult]
 		num_calculation = len(calculationid)
-		# 读证明题表
-		searchstring = ('select "id" from proof' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		proofid = [i[0] for i in searchresult]
 		num_proof = len(proofid)
 
 		if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
@@ -1528,14 +1523,78 @@ class MainWindow(QWidget):
 		self.update_preview_in_SelectQuestionBox()
 
 	def export_questions_to_html(self):
+		[passed,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid]=self.get_questionid_in_ExportbySection()
+		if not passed:
+			return
+		num_schoice = len(schoiceid)
+		num_mchoice = len(mchoiceid)
+		num_tof = len(tofid)
+		num_blank = len(blankid)
+		num_calculation = len(calculationid)
+		num_proof = len(proofid)
+
+		if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
+			QMessageBox.about(self, u'通知', u'当前章节中没有题目！')
+			return
+		
+		result = myfun.export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
+		if result[0]:
+			QMessageBox.about(self, u'通知', (u'导出文件 %s.html 成功！' % (result[1])))
+		else:
+			QMessageBox.about(self, u'错误', u'导出失败！')
+			print(result[1])
+
+	def get_questionid_in_ExportbySection(self):
 		if not self.selected_sectionids_in_ExportBox:
 			QMessageBox.about(self, u'通知', u'请先选择章节！')
-			return
-		sectionstring = (' where (section=' + str(self.selected_sectionids_in_ExportBox[0]))
-		for i in range(1, len(self.selected_sectionids_in_ExportBox)):
-			sectionstring = sectionstring + ' or section=' + str(self.selected_sectionids_in_ExportBox[i])
-		sectionstring += ')'
+			return False,[],[],[],[],[],[]
+		flag = [] # 记录每个题型的填写数量是否超出已有数量
+		num_of_filled = [] # 用户填写的每个题型的数量
+		num_of_filled.append(int(self.ed_schoice.text()))
+		num_of_filled.append(int(self.ed_mchoice.text()))
+		num_of_filled.append(int(self.ed_tof.text()))
+		num_of_filled.append(int(self.ed_blank.text()))
+		num_of_filled.append(int(self.ed_calculation.text()))
+		num_of_filled.append(int(self.ed_proof.text()))
+		for col in range(6):
+			num_of_sections = len(self.selected_sectionids_in_ExportBox)
+			total_num_of_questions = 0
+			for i in range(num_of_sections):
+				total_num_of_questions += int(self.tbl_selectedsections.item(i,col+1).text())
+			flag.append(total_num_of_questions<num_of_filled[col]) # 填写的超出实际的
+		errortype=[] # 数量填写有误的题目类型
+		if flag[0] == True:
+			errortype.append('单选题')
+		if flag[1] == True:
+			errortype.append('多选题')
+		if flag[2] == True:
+			errortype.append('判断题')
+		if flag[3] == True:
+			errortype.append('填空题')
+		if flag[4] == True:
+			errortype.append('计算题')
+		if flag[5] == True:
+			errortype.append('证明题')
+		if errortype:
+			QMessageBox.about(self, u'错误', u'您填写的%s数量超出所选章节中的题目数量，请重新填写！' % ('、'.join(errortype)))
+			return False,[],[],[],[],[],[]
+
+		# 根据填写的题目数量获取并筛选单选题id
+		schoiceid = self.drop_questions('schoice', int(self.ed_schoice.text()))
+		# 根据填写的题目数量获取并筛选多选题id
+		mchoiceid = self.drop_questions('mchoice', int(self.ed_mchoice.text()))
+		# 根据填写的题目数量获取并筛选判断题id
+		tofid = self.drop_questions('tof', int(self.ed_tof.text()))
+		# 根据填写的题目数量获取并筛选填空题id
+		blankid = self.drop_questions('blank', int(self.ed_blank.text()))
+		# 根据填写的题目数量获取并筛选计算题id
+		calculationid = self.drop_questions('calculation', int(self.ed_calculation.text()))
+		# 根据填写的题目数量获取并筛选证明题id
+		proofid = self.drop_questions('proof', int(self.ed_proof.text()))
 		
+		return True,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid
+
+	def drop_questions(self, question_type, num_target): # 根据填写的题目数量获取并筛选题目id
 		difficulties = []
 		if self.chk_notsure.isChecked():
 			difficulties.append('1')
@@ -1551,44 +1610,28 @@ class MainWindow(QWidget):
 			difficultystring = ' and (difficulty =' + ' or difficulty='.join(difficulties) + ')'
 		else:
 			difficultystring = ''
-		# 读单选题表
-		searchstring = ('select "id" from schoice' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		schoiceid = [i[0] for i in searchresult]
-		num_schoice = len(schoiceid)
-		# 读多选题表
-		searchstring = ('select "id" from mchoice' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		mchoiceid = [i[0] for i in searchresult]
-		num_mchoice = len(mchoiceid)
-		# 读判断题表
-		searchstring = ('select "id" from tof' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		tofid = [i[0] for i in searchresult]
-		num_tof = len(tofid)
-		# 读填空题表
-		searchstring = ('select "id" from blank' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		blankid = [i[0] for i in searchresult]
-		num_blank = len(blankid)
-		# 读计算题表
-		searchstring = ('select "id" from calculation' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		calculationid = [i[0] for i in searchresult]
-		num_calculation = len(calculationid)
-		# 读证明题表
-		searchstring = ('select "id" from proof' + sectionstring + difficultystring)
-		searchresult = mydb.search(searchstring)
-		proofid = [i[0] for i in searchresult]
-		num_proof = len(proofid)
-
-		if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
-			QMessageBox.about(self, u'通知', u'当前章节中没有题目！')
-			return
-		
-		result = myfun.export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
-		if result[0]:
-			QMessageBox.about(self, u'通知', (u'导出文件 %s.html 成功！' % (result[1])))
-		else:
-			QMessageBox.about(self, u'错误', u'导出失败！')
-			print(result[1])
+		id_by_sections = []
+		num_id_by_sections = []
+		for i in range(0, len(self.selected_sectionids_in_ExportBox)):
+			sectionstring = (' where (section=' + str(self.selected_sectionids_in_ExportBox[i]) + ')')
+			searchstring = ('select "id" from ' + question_type + sectionstring + difficultystring)
+			searchresult = mydb.search(searchstring)
+			id_by_sections.append([i[0] for i in searchresult])
+			num_id_by_sections.append(len(id_by_sections[-1]))
+		while sum(num_id_by_sections) > num_target:
+			interval = [num_id_by_sections[i]/sum(num_id_by_sections) for i in range(len(num_id_by_sections))]
+			for j in range(1,len(interval)):
+				interval[j] += interval[j-1]
+			indicator = random.random()
+			for j in range(len(interval)):
+				if num_id_by_sections[j] == 0:
+					continue
+				if indicator<=interval[j]:
+					num_id_by_sections[j] -= 1
+					break
+		questionid = []
+		for i in range(len(id_by_sections)):
+			ids = random.sample(id_by_sections[i], num_id_by_sections[i])
+			for j in ids:
+				questionid.append(j)
+		return questionid

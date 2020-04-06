@@ -23,62 +23,99 @@ def mathlength(string):
     total_len = len(string_altered.encode('gb18030'))
     return total_len
 
-def format_questiondata_to_html(question, question_type, number='', fromdatabase=0): # 将题目转化为html，参数为问题数据，问题类型，问题编号（默认为空）
+ # 将题目转化为html，参数为问题数据，问题类型，问题编号（默认为空），是否从数据库读取，type=0表示同时输出问题和答案，1表示只有问题，2表示只有答案
+def format_questiondata_to_html(question, question_type, number='', fromdatabase=0, output_type=0):
     if number == '':
         format_number = number
     else:
         format_number = number + '. '
     if question_type == '单选题':
-        questionstring = ('<p>' + format_number + format_question_to_html(question[0], '单选题', fromdatabase)
-                                    + '</p><p>A. ' + format_enter_to_html(question[1])
-                                    + '</p><p>B. ' + format_enter_to_html(question[2]))
-        if question[3] != '':
-            questionstring += ('</p><p>C. ' + format_enter_to_html(question[3]))
-        if question[4] != '':
-            questionstring += ('</p><p>D. ' + format_enter_to_html(question[4]))
-        questionstring += ('</p><p>答案: ' + question[5]
-                           + '</p><p>解析： ' + format_subquestion_to_html(question[6], fromdatabase))
+        questionstring = ''
+        if output_type == 0 or output_type == 1:
+            questionstring += ('<p>' + format_number + format_question_to_html(question[0], '单选题', fromdatabase)
+                                        + '</p><p>A. ' + format_enter_to_html(question[1])
+                                        + '</p><p>B. ' + format_enter_to_html(question[2]) + '</p>')
+            if question[3] != '':
+                questionstring += ('<p>C. ' + format_enter_to_html(question[3]) + '</p>')
+            if question[4] != '':
+                questionstring += ('<p>D. ' + format_enter_to_html(question[4]) + '</p>')
+        if output_type == 0 or output_type == 2:
+            questionstring += '<p>'
+            if output_type == 2:
+                questionstring += format_number
+            questionstring += ('答案: ' + question[5]
+                            + '</p><p>解析： ' + format_subquestion_to_html(question[6], fromdatabase) + '</p>')
     elif question_type == '多选题':
-        answer = ''
-        answer_raw = question[5:9]
-        for j in range(1, max(answer_raw)+1):
-            thisanswer = ''
-            for k in range(4):
-                if answer_raw[k] == j:
-                    thisanswer = thisanswer + chr(k+65)
-            answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
-        questionstring = ('<p>' + format_number + format_question_to_html(question[0], '多选题', fromdatabase)
-                                    + '</p><p>A. ' + format_enter_to_html(question[1])
-                                    + '</p><p>B. ' + format_enter_to_html(question[2]))
-        if question[3] != '':
-            questionstring += ('</p><p>C. ' + format_enter_to_html(question[3]))
-        if question[4] != '':
-            questionstring += ('</p><p>D. ' + format_enter_to_html(question[4]))
-        questionstring += ('</p><p>答案： ' + answer
-                            + '</p><p>解析： ' + format_subquestion_to_html(question[9], fromdatabase))
+        questionstring = ''
+        if output_type == 0 or output_type == 1:
+            questionstring += ('<p>' + format_number + format_question_to_html(question[0], '多选题', fromdatabase)
+                                        + '</p><p>A. ' + format_enter_to_html(question[1])
+                                        + '</p><p>B. ' + format_enter_to_html(question[2]) + '</p>')
+            if question[3] != '':
+                questionstring += ('<p>C. ' + format_enter_to_html(question[3]) + '</p>')
+            if question[4] != '':
+                questionstring += ('<p>D. ' + format_enter_to_html(question[4]) + '</p>')
+        if output_type == 0 or output_type == 2:
+            answer = ''
+            answer_raw = question[5:9]
+            for j in range(1, max(answer_raw)+1):
+                thisanswer = ''
+                for k in range(4):
+                    if answer_raw[k] == j:
+                        thisanswer = thisanswer + chr(k+65)
+                answer = answer + '第'+str(j)+'空：' + thisanswer + '；' 
+            questionstring += '<p>'
+            if output_type == 2:
+                questionstring += format_number
+            questionstring += ('答案： ' + answer
+                                + '</p><p>解析： ' + format_subquestion_to_html(question[9], fromdatabase) + '</p>')
     elif question_type == '判断题':
-        answertext = ['错误', '正确']
-        questionstring = ('<p>' + format_number + format_question_to_html(question[0], '判断题', fromdatabase)
-                                    + '</p><p>答案： ' + answertext[question[1]]
-                                    + '</p><p>解析： ' + format_subquestion_to_html(question[2], fromdatabase))
+        questionstring = ''
+        if output_type == 0 or output_type == 1:
+            questionstring += ('<p>' + format_number + format_question_to_html(question[0], '判断题', fromdatabase) + '</p>')
+        if output_type == 0 or output_type == 2:
+            answertext = ['错误', '正确']
+            questionstring += '<p>'
+            if output_type == 2:
+                questionstring += format_number
+            questionstring += ('答案： ' + answertext[question[1]]
+                                + '</p><p>解析： ' + format_subquestion_to_html(question[2], fromdatabase) + '</p>')
     elif question_type == '填空题':
-        if question[4] != '':
-            answer = '第1空：%s；第2空：%s；第3空：%s；第四空%s' % (format_enter_to_html(question[1]),format_enter_to_html(question[2]),format_enter_to_html(question[3]),format_enter_to_html(question[4]))
-        elif question[3] != '':
-            answer = '第1空：%s；第2空：%s；第3空：%s' % (format_enter_to_html(question[1]),format_enter_to_html(question[2]),format_enter_to_html(question[3]))
-        elif question[2] != '':
-            answer = '第1空：%s；第2空：%s' % (format_enter_to_html(question[1]),format_enter_to_html(question[2]))
-        else:
-            answer = '第1空：%s' % (format_enter_to_html(question[1]))
-        questionstring = ('<p>' + format_number + format_question_to_html(question[0], '填空题', fromdatabase)
-                                    + '</p><p>答案： ' + answer
-                                    + '</p><p>解析： ' + format_subquestion_to_html(question[5], fromdatabase))
+        questionstring = ''
+        if output_type == 0 or output_type == 1:
+            questionstring += ('<p>' + format_number + format_question_to_html(question[0], '填空题', fromdatabase) + '</p>')
+        if output_type == 0 or output_type == 2:
+            if question[4] != '':
+                answer = '第1空：%s；第2空：%s；第3空：%s；第四空%s' % (format_enter_to_html(question[1]),format_enter_to_html(question[2]),format_enter_to_html(question[3]),format_enter_to_html(question[4]))
+            elif question[3] != '':
+                answer = '第1空：%s；第2空：%s；第3空：%s' % (format_enter_to_html(question[1]),format_enter_to_html(question[2]),format_enter_to_html(question[3]))
+            elif question[2] != '':
+                answer = '第1空：%s；第2空：%s' % (format_enter_to_html(question[1]),format_enter_to_html(question[2]))
+            else:
+                answer = '第1空：%s' % (format_enter_to_html(question[1]))
+            questionstring += '<p>'
+            if output_type == 2:
+                questionstring += format_number
+            questionstring += ('答案： ' + answer
+                            + '</p><p>解析： ' + format_subquestion_to_html(question[5], fromdatabase) + '</p>')
     elif question_type == '计算题':
-        questionstring = ('<p>' + format_number + format_question_to_html(question[0], '计算题', fromdatabase)
-                                    + '</p><p>解： ' + format_subquestion_to_html(question[1], fromdatabase))
+        questionstring = ''
+        if output_type == 0 or output_type == 1:
+            questionstring += ('<p>' + format_number + format_question_to_html(question[0], '计算题', fromdatabase) + '</p>')
+        if output_type == 0 or output_type == 2:
+            questionstring += '<p>'
+            if output_type == 2:
+                questionstring += format_number
+            questionstring += ('解： ' + format_subquestion_to_html(question[1], fromdatabase) + '</p>')
     elif question_type == '证明题':
-        questionstring = ('<p>' + format_number + format_question_to_html(question[0], '证明题', fromdatabase)
-                                    + '</p><p>证明： ' + format_subquestion_to_html(question[1], fromdatabase))
+        questionstring = ''
+        if output_type == 0 or output_type == 1:
+            questionstring += ('<p>' + format_number + format_question_to_html(question[0], '证明题', fromdatabase) + '</p>')
+        if output_type == 0 or output_type == 2:
+            questionstring += '<p>'
+            if output_type == 2:
+                questionstring += format_number
+            questionstring += ('证明： ' + format_subquestion_to_html(question[1], fromdatabase) + '</p>')
     return questionstring
 
 
@@ -111,10 +148,11 @@ def gethtml(width, contents=''):
             font-size: 18pt;
         }
     </style>
+    <meta charset="UTF-8">
     </head>
     <body>
-    <p>'''
-    pageSourceFoot = r'''</p>
+    '''
+    pageSourceFoot = r'''
     </body>
     </html>'''
     return pageSourceHead1 + str(width-5) + pageSourceHead2 + contents + pageSourceFoot
@@ -438,7 +476,7 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
                     f.writelines('\n')
             f.writelines('\\end{enumerate}\n')
 
-        # 写入解答
+        # 单独写入解答
         if options['solution'] and (not options['follow']):
             f.writelines('\\tagged{sol}{\n')
             # 单选题解答
@@ -623,7 +661,7 @@ def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,optio
     try:
         filename = ('questions[%s]' % datetime.now().strftime('%Y-%m-%dT%H-%M-%S'))
         filepath = ('%s/exports/%s.html' % (QDir.currentPath(), filename))
-        pageSourceContent = generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
+        pageSourceContent = generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options)
         html_source = gethtml(100, pageSourceContent)
         html_source = regex.sub(
             r'<script type="text\/javascript" id="MathJax-script" async src=".*"><\/script>',
@@ -671,7 +709,7 @@ def export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,p
         print(e)
         return 0
 
-def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid):
+def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'solution':True}):
     num_schoice = len(schoiceid)
     num_mchoice = len(mchoiceid)
     num_tof = len(tofid)
@@ -679,42 +717,110 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid):
     num_calculation = len(calculationid)
     num_proof = len(proofid)
     pageSourceContent = ''
-    chinese_num = ['一','二','三','四','五','六']
+    chinese_num = ['一','二','三','四','五','六','七','八','九','十','十一','十二']
     sec = -1
-    for i in range(num_schoice):
-        thisquestion = mydb.get_schoice_by_id(schoiceid[i])
-        if i == 0:
+    # 写入单选题
+    if num_schoice>0:
+        sec += 1
+        pageSourceContent += ('<h2>%s、单选题</h2>' % (chinese_num[sec]))
+        for i in range(num_schoice):
+            thisquestion = mydb.get_schoice_by_id(schoiceid[i])
+            pageSourceContent += format_questiondata_to_html(thisquestion, '单选题', str(i+1), fromdatabase=1,output_type=1)
+            if options['follow']:
+                pageSourceContent += format_questiondata_to_html(thisquestion, '单选题', fromdatabase=1,output_type=2)
+    # 写入多选题
+    if num_mchoice>0:
+        sec += 1
+        pageSourceContent += ('<h2>%s、多选题</h2>' % (chinese_num[sec]))
+        for i in range(num_mchoice):
+            thisquestion = mydb.get_mchoice_by_id(mchoiceid[i])
+            pageSourceContent += format_questiondata_to_html(thisquestion, '多选题', str(i+1), fromdatabase=1,output_type=1)
+            if options['follow']:
+                pageSourceContent += format_questiondata_to_html(thisquestion, '多选题', fromdatabase=1,output_type=2)
+    # 写入判断题
+    if num_tof>0:
+        sec += 1
+        pageSourceContent += ('<h2>%s、判断题</h2>' % (chinese_num[sec]))
+        for i in range(num_tof):
+            thisquestion = mydb.get_tof_by_id(tofid[i])
+            pageSourceContent += format_questiondata_to_html(thisquestion, '判断题', str(i+1), fromdatabase=1,output_type=1)
+            if options['follow']:
+                pageSourceContent += format_questiondata_to_html(thisquestion, '判断题', fromdatabase=1,output_type=2)
+    # 写入填空题
+    if num_blank>0:
+        sec += 1
+        pageSourceContent += ('<h2>%s、填空题</h2>' % (chinese_num[sec]))
+        for i in range(num_blank):
+            thisquestion = mydb.get_blank_by_id(blankid[i])
+            pageSourceContent += format_questiondata_to_html(thisquestion, '填空题', str(i+1), fromdatabase=1,output_type=1)
+            if options['follow']:
+                pageSourceContent += format_questiondata_to_html(thisquestion, '填空题', fromdatabase=1,output_type=2)
+    # 写入计算题
+    if num_calculation>0:
+        sec += 1
+        pageSourceContent += ('<h2>%s、计算题</h2>' % (chinese_num[sec]))
+        for i in range(num_calculation):
+            thisquestion = mydb.get_calculation_by_id(calculationid[i])
+            pageSourceContent += format_questiondata_to_html(thisquestion, '计算题', str(i+1), fromdatabase=1,output_type=1)
+            if options['follow']:
+                pageSourceContent += format_questiondata_to_html(thisquestion, '计算题', fromdatabase=1,output_type=2)
+            elif options['white']:
+                pageSourceContent += ''.join(['</br>' for i in range(8)])
+    # 写入证明题
+    if num_proof>0:
+        sec += 1
+        pageSourceContent += ('<h2>%s、计算题</h2>' % (chinese_num[sec]))
+        for i in range(num_proof):
+            thisquestion = mydb.get_proof_by_id(proofid[i])
+            pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', fromdatabase=1,output_type=1)
+            if options['follow']:
+                pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1,output_type=2)
+            elif options['white']:
+                pageSourceContent += ''.join(['</br>' for i in range(8)])
+
+    # 单独写入解答
+    if options['solution'] and (not options['follow']):
+        # 写入单选题
+        if num_schoice>0:
             sec += 1
-            pageSourceContent += ('</p><h2>%s、单选题</h2>' % (chinese_num[sec]))
-        pageSourceContent += format_questiondata_to_html(thisquestion, '单选题', str(i+1), fromdatabase=1)
-    for i in range(num_mchoice):
-        if i == 0:
+            pageSourceContent += ('<h2>%s、单选题解答</h2>' % (chinese_num[sec]))
+            for i in range(num_schoice):
+                thisquestion = mydb.get_schoice_by_id(schoiceid[i])
+                pageSourceContent += format_questiondata_to_html(thisquestion, '单选题', str(i+1), fromdatabase=1,output_type=2)
+        # 写入多选题
+        if num_mchoice>0:
             sec += 1
-            pageSourceContent += ('</p><h2>%s、多选题</h2>' % (chinese_num[sec]))
-        thisquestion = mydb.get_mchoice_by_id(mchoiceid[i])
-        pageSourceContent += format_questiondata_to_html(thisquestion, '多选题', str(i+1), fromdatabase=1)
-    for i in range(num_tof):
-        if i == 0:
+            pageSourceContent += ('<h2>%s、多选题解答</h2>' % (chinese_num[sec]))
+            for i in range(num_mchoice):
+                thisquestion = mydb.get_mchoice_by_id(mchoiceid[i])
+                pageSourceContent += format_questiondata_to_html(thisquestion, '多选题', str(i+1), fromdatabase=1,output_type=2)
+        # 写入判断题
+        if num_tof>0:
             sec += 1
-            pageSourceContent += ('</p><h2>%s、判断题</h2>' % (chinese_num[sec]))
-        thisquestion = mydb.get_tof_by_id(tofid[i])
-        pageSourceContent += format_questiondata_to_html(thisquestion, '判断题', str(i+1), fromdatabase=1)
-    for i in range(num_blank):
-        if i == 0:
+            pageSourceContent += ('<h2>%s、判断题解答</h2>' % (chinese_num[sec]))
+            for i in range(num_tof):
+                thisquestion = mydb.get_tof_by_id(tofid[i])
+                pageSourceContent += format_questiondata_to_html(thisquestion, '判断题', str(i+1), fromdatabase=1,output_type=2)
+        # 写入填空题
+        if num_blank>0:
             sec += 1
-            pageSourceContent += ('</p><h2>%s、填空题</h2>' % (chinese_num[sec]))
-        thisquestion = mydb.get_blank_by_id(blankid[i])
-        pageSourceContent += format_questiondata_to_html(thisquestion, '填空题', str(i+1), fromdatabase=1)
-    for i in range(num_calculation):
-        if i == 0:
+            pageSourceContent += ('<h2>%s、填空题解答</h2>' % (chinese_num[sec]))
+            for i in range(num_blank):
+                thisquestion = mydb.get_blank_by_id(blankid[i])
+                pageSourceContent += format_questiondata_to_html(thisquestion, '填空题', str(i+1), fromdatabase=1,output_type=2)
+        # 写入计算题
+        if num_calculation>0:
             sec += 1
-            pageSourceContent += ('</p><h2>%s、计算题</h2>' % (chinese_num[sec]))
-        thisquestion = mydb.get_calculation_by_id(calculationid[i])
-        pageSourceContent += format_questiondata_to_html(thisquestion, '计算题', str(i+1), fromdatabase=1)
-    for i in range(num_proof):
-        if i == 0:
+            pageSourceContent += ('<h2>%s、计算题解答</h2>' % (chinese_num[sec]))
+            for i in range(num_calculation):
+                thisquestion = mydb.get_calculation_by_id(calculationid[i])
+                pageSourceContent += format_questiondata_to_html(thisquestion, '计算题', str(i+1), fromdatabase=1,output_type=2)
+        # 写入证明题
+        if num_proof>0:
             sec += 1
-            pageSourceContent += ('</p><h2>%s、证明题</h2>' % (chinese_num[sec]))
-        thisquestion = mydb.get_proof_by_id(proofid[i])
-        pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1)
+            pageSourceContent += ('<h2>%s、计算题解答</h2>' % (chinese_num[sec]))
+            for i in range(num_proof):
+                thisquestion = mydb.get_proof_by_id(proofid[i])
+                pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1,output_type=2)
+
     return pageSourceContent
