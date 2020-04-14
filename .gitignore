@@ -6,3 +6,4 @@ build/
 exports/
 db/database.db
 questions.spec
+questions.exe
