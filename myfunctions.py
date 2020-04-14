@@ -123,7 +123,7 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
 # path = QDir.current().filePath(r'MathJax-3.0.1/es5/tex-mml-chtml.js') 
 # mathjax = QUrl.fromLocalFile(path).toString()
 def gethtml(width, contents=''):
-    mathjax = QDir.currentPath() + r'/MathJax-3.0.1/es5/tex-mml-chtml.js'
+    mathjax = QDir.currentPath() + r'/MathJax-3.0.5/es5/tex-mml-chtml.js'
     pageSourceHead1 = r'''
     <html><head>
     <script>
@@ -357,7 +357,7 @@ def format_enter_to_latex(text): # 将latex环境以外的回车改为\\+回车
 def find_text_enter(text):
     pass
 
-def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq=[],mchoice_choiceseq=[]):
+def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'white':False, 'solution':True, 'randomchoice': False},schoice_choiceseq=[],mchoice_choiceseq=[]):
     if options['random']:
         shuffle(schoiceid)
         shuffle(mchoiceid)
@@ -381,7 +381,7 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
             f.writelines(latex.preamble.replace('\\usetag{sol}','\\usetag{nosol}'))
         else:
             f.writelines(latex.preamble)
-        f.writelines(latex.title)
+        f.writelines(options['title'])
         f.writelines(latex.begindocument)
         if options['randomchoice']:
             sequence_type = 1 # 重新随机生成排列选项
@@ -459,9 +459,9 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
                 f.writelines('\t\\item ')
                 write_tof_question(f, thisquestion)
                 if options['follow']:
-                    f.writelines('\t\t\\tagged{sol}{答案：')
+                    f.writelines('\t\t\\tagged{sol}{\\\\答案：')
                     write_tof_solution(f, thisquestion)
-                    f.writelines('\t\t}')
+                    f.writelines('\t\t}\n')
             f.writelines('\\end{enumerate}\n')
         # 写入填空题
         if num_blank>0:
@@ -472,9 +472,9 @@ def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,opti
                 f.writelines('\t\\item ')
                 write_blank_question(f, thisquestion)
                 if options['follow']:
-                    if thisquestion[0][-1] != '}':
-                        f.writelines('\\\\')
-                    f.writelines('\t\t\\tagged{sol}{答案：')
+                    # if thisquestion[0][-1] != '}':
+                    #     f.writelines('\\\\')
+                    f.writelines('\t\t\\tagged{sol}{\\\\答案：')
                     write_blank_solution(f, thisquestion)
                     f.writelines('\t\t}')
                 else:
@@ -654,10 +654,10 @@ def write_tof_question(f, tof):
 def write_tof_solution(f, tof):
     answer = ['错误', '正确']
     if tof[2] != '':
-        f.writelines('%s\\\\\n' % (answer(tof[1])))
+        f.writelines('%s\\\\\n' % (answer[tof[1]]))
         f.writelines('\t\t解析：%s\n' % (tof[2]))
     else:
-        f.writelines('%s\n' % (answer(tof[1])))
+        f.writelines('%s\n' % (answer[tof[1]]))
 
 def write_blank_question(f, blank):
     f.writelines('%s' % (blank[0]))
@@ -762,7 +762,7 @@ def export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,p
         print(e)
         return 0
 
-def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'solution':True, 'randomchoice': False},schoice_choiceseq=[],mchoice_choiceseq=[]):
+def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'white':False, 'solution':True, 'randomchoice': False},schoice_choiceseq=[],mchoice_choiceseq=[]):
     num_schoice = len(schoiceid)
     num_mchoice = len(mchoiceid)
     num_tof = len(tofid)
@@ -770,6 +770,8 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
     num_calculation = len(calculationid)
     num_proof = len(proofid)
     pageSourceContent = ''
+    if options['title']:
+        pageSourceContent += ('<h1 style="text-align:center">' + options['title'] + '</h1>')
     chinese_num = ['一','二','三','四','五','六','七','八','九','十','十一','十二']
     sec = -1
     if options['randomchoice']:
@@ -948,3 +950,7 @@ def make_choices_random(question, sequence, question_type):
         for j in range(num_of_choices):
             thisquestion[j+5]=answer[sequence[j]-1]
     return thisquestion
+
+def generate_ordered_choice(num):
+    choice_seq = [[1,2,3,4] for i in range(num)]
+    return choice_seq

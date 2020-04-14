@@ -187,15 +187,15 @@ class AddSingleChoice(QWidget):
 
     # 更新预览
     def update_preview(self):
-        pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '单选题')
-                                    + '</p><p>A. ' + self.input_answerA.toPlainText().strip().replace('\n','</br>')
-                                    + '</p><p>B. ' + self.input_answerB.toPlainText().strip().replace('\n','</br>'))
+        pageSourceContent = ('<p>' + myfun.format_question_to_html(self.input_question.toPlainText(), '单选题') + '</p>'
+                                    + '<p>A. ' + self.input_answerA.toPlainText().strip().replace('\n','</br>') + '</p>'
+                                    + '<p>B. ' + self.input_answerB.toPlainText().strip().replace('\n','</br>') + '</p>')
         if self.input_answerC.toPlainText().strip() != '':
-            pageSourceContent += ('</p><p>C. ' + self.input_answerC.toPlainText().strip().replace('\n','</br>'))
+            pageSourceContent += ('<p>C. ' + self.input_answerC.toPlainText().strip().replace('\n','</br>') + '</p>')
         if self.input_answerD.toPlainText().strip() != '':
-            pageSourceContent += ('</p><p>D. ' + self.input_answerD.toPlainText().strip().replace('\n','</br>'))
-        pageSourceContent += ('</p><p>答案: ' + self.correct
-                                + '</p><p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()))
+            pageSourceContent += ('<p>D. ' + self.input_answerD.toPlainText().strip().replace('\n','</br>') + '</p>')
+        pageSourceContent += ('<p>答案: ' + self.correct + '</p>'
+                                + '<p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()) + '</p>')
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def insert_question(self):

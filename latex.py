@@ -8,12 +8,15 @@ preamble=r'''\usepackage[margin=1in]{geometry}
 \usepackage{enumerate}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{extarrows}
 \usepackage{physics}
 \usepackage{tagging}
 \usepackage{tikz,pgfplots} %绘图
 \usetikzlibrary{arrows,intersections}
 \usepgfplotslibrary{fillbetween}
 \usetikzlibrary{patterns}
+\usepgfplotslibrary{polar}
+\usepackage{adjustbox}
 
 \pagestyle{plain}
 \ctexset{
@@ -36,7 +39,7 @@ label-width = 14pt
 
 \title{'''
 
-title = '多元函数微分法作业2'
+title = '重积分作业'
 
 begindocument = r'''}
 \date{}

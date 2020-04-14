@@ -26,8 +26,8 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.04.06'
-		self.selected_sectionids_in_ExportBox = [57,58,59,60,61]
+		self.ver = '2020.04.14'
+		self.selected_sectionids_in_ExportBox = []
 		self.last_added_section_id = 1
 		self.last_added_difficulty_id = 1
 		self.last_added_source_id = 1
@@ -41,7 +41,8 @@ class MainWindow(QWidget):
 						'easy': True,
 						'medium': True,
 						'hard': True,
-						'hell': True}
+						'hell': True,
+						'title': ''}
 
 		mainlayout = QVBoxLayout()
 
@@ -405,7 +406,6 @@ class MainWindow(QWidget):
 		self.chk_hard = QCheckBox('困难')
 		self.chk_hell = QCheckBox('地狱')
 		self.chk_solution.setChecked(True)
-		# self.chk_randomchoice.setEnabled(False)
 		self.chk_white.setChecked(True)
 		self.chk_follow.setChecked(False)
 		self.chk_notsure.setChecked(True)
@@ -427,13 +427,20 @@ class MainWindow(QWidget):
 		layout_options.addWidget(self.chk_solution, 0, 0)
 		layout_options.addWidget(self.chk_follow, 1, 0)
 		layout_options.addWidget(self.chk_white, 2, 0)
-		layout_options.addWidget(self.chk_random, 3, 0)
-		layout_options.addWidget(self.chk_randomchoice, 4, 0)
-		layout_options.addWidget(self.chk_notsure, 0, 1)
-		layout_options.addWidget(self.chk_easy, 1, 1)
-		layout_options.addWidget(self.chk_medium, 2, 1)
-		layout_options.addWidget(self.chk_hard, 3, 1)
-		layout_options.addWidget(self.chk_hell, 4, 1)
+		layout_options.addWidget(self.chk_random, 0, 1)
+		layout_options.addWidget(self.chk_randomchoice, 1, 1)
+		
+		self.ed_title = QLineEdit()
+		self.ed_title.setPlaceholderText('在此输入导出习题集的标题')
+		layout_title = QFormLayout()
+		layout_title.addRow('标题：', self.ed_title)
+		layout_options.addLayout(layout_title, 4, 0, 1, 2)
+		
+		layout_options.addWidget(self.chk_notsure, 0, 2)
+		layout_options.addWidget(self.chk_easy, 1, 2)
+		layout_options.addWidget(self.chk_medium, 2, 2)
+		layout_options.addWidget(self.chk_hard, 3, 2)
+		layout_options.addWidget(self.chk_hell, 4, 2)
 		layout_options.setHorizontalSpacing(10)
 
 		layout_btn = QHBoxLayout()
@@ -950,6 +957,8 @@ class MainWindow(QWidget):
 	def btn_import_id_clicked(self):
 		folder = QDir.currentPath() + '/exports/'
 		filename, _ = QFileDialog.getOpenFileName(self, '请选择文件', folder, "txt files (*.txt)")
+		if not filename:
+			return
 		f = open(filename, 'r', encoding='utf-8')
 		f_list = f.readlines()
 		f_list = [line.strip() for line in f_list]
@@ -975,9 +984,11 @@ class MainWindow(QWidget):
 		for i in range(schoice_index+1, mchoice_index):
 			items = f_list[i].split(',')
 			self.schoiceid_prepare.append(int(items[0]))
+			self.schoice_choiceseq_prepare.append([int(items[i]) for i in range(1,5)])
 		for i in range(mchoice_index+1, tof_index):
 			items = f_list[i].split(',')
 			self.mchoiceid_prepare.append(int(items[0]))
+			self.mchoice_choiceseq_prepare.append([int(items[i]) for i in range(1,5)])
 		for i in range(tof_index+1, blank_index):
 			self.tofid_prepare.append(int(f_list[i]))
 		for i in range(blank_index+1, calculation_index):
@@ -997,6 +1008,10 @@ class MainWindow(QWidget):
 		self.preview_ui.blankid = self.blankid_prepare
 		self.preview_ui.calculationid = self.calculationid_prepare
 		self.preview_ui.proofid = self.proofid_prepare
+		self.preview_ui.schoice_seq = self.schoice_choiceseq_prepare
+		self.preview_ui.mchoice_seq = self.mchoice_choiceseq_prepare
+		self.options['title'] = self.ed_title.text().strip()
+		self.preview_ui.options = self.options
 		self.preview_ui.createPreview()
 		self.preview_ui.show()
 
@@ -1019,13 +1034,19 @@ class MainWindow(QWidget):
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
 			if self.chk_select_in_SelectQuestionBox.isChecked():
 				self.schoiceid_prepare.append(self.questionid_in_SelectQuestionBox)
+				self.schoice_choiceseq_prepare.append([1,2,3,4])
 			else:
-				self.schoiceid_prepare.remove(self.questionid_in_SelectQuestionBox)
+				index = self.schoiceid_prepare.index(self.questionid_in_SelectQuestionBox)
+				del self.schoiceid_prepare[index]
+				del self.schoice_choiceseq_prepare[index]
 		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '多选题':
 			if self.chk_select_in_SelectQuestionBox.isChecked():
 				self.mchoiceid_prepare.append(self.questionid_in_SelectQuestionBox)
+				self.mchoice_choiceseq_prepare.append([1,2,3,4])
 			else:
-				self.mchoiceid_prepare.remove(self.questionid_in_SelectQuestionBox)
+				index = self.mchoiceid_prepare.index(self.questionid_in_SelectQuestionBox)
+				del self.mchoiceid_prepare[index]
+				del self.mchoice_choiceseq_prepare[index]
 		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '判断题':
 			if self.chk_select_in_SelectQuestionBox.isChecked():
 				self.tofid_prepare.append(self.questionid_in_SelectQuestionBox)
@@ -1516,6 +1537,7 @@ class MainWindow(QWidget):
 			QMessageBox.about(self, u'通知', u'当前章节中没有题目！')
 			return
 		
+		self.options['title'] = self.ed_title.text().strip()
 		result = myfun.export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
 		if result[0]:
 			QMessageBox.about(self, u'通知', (u'导出文件 %s.tex 成功！' % (result[1])))
@@ -1544,6 +1566,7 @@ class MainWindow(QWidget):
 			QMessageBox.about(self, u'通知', u'当前章节中没有题目！')
 			return
 		
+		self.options['title'] = self.ed_title.text().strip()
 		result = myfun.export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
 		if result[0]:
 			QMessageBox.about(self, u'通知', (u'导出文件 %s.html 成功！' % (result[1])))

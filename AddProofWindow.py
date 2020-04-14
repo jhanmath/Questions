@@ -139,8 +139,8 @@ class AddProof(QWidget):
 
     # 更新预览
     def update_preview(self):
-        pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '证明题')
-                                    + '</p><p>证明： ' + myfun.format_subquestion_to_html(self.answer))
+        pageSourceContent = ('<p>' + myfun.format_question_to_html(self.input_question.toPlainText(), '证明题') + '</p>'
+                                    + '<p>证明： ' + myfun.format_subquestion_to_html(self.answer) + '</p>')
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def insert_question(self):

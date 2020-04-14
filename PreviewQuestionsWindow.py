@@ -19,12 +19,14 @@ class PreviewQuestions(QWidget):
         self.resize(900,800)
         self.setWindowTitle("预览选中的问题")
         self.setWindowModality(Qt.ApplicationModal)
-        self.schoiceid = [25,26] # 自由选择问题导出标签页中待导出的所有单选题id
-        self.mchoiceid = [] # 自由选择问题导出标签页中待导出的所有多选题id
-        self.tofid = [] # 自由选择问题导出标签页中待导出的所有判断题id
-        self.blankid = [] # 自由选择问题导出标签页中待导出的所有填空题id
-        self.calculationid = [] # 自由选择问题导出标签页中待导出的所有计算题id
-        self.proofid = [] # 自由选择问题导出标签页中待导出的所有证明题id
+        self.schoiceid = [] # 预览窗口中所有单选题id
+        self.mchoiceid = [] # 预览窗口中所有多选题id
+        self.tofid = [] # 预览窗口中所有判断题id
+        self.blankid = [] # 预览窗口中所有填空题id
+        self.calculationid = [] # 预览窗口中所有计算题id
+        self.proofid = [] # 预览窗口中所有证明题id
+        self.schoice_seq = [] # 预览窗口中所有单选题选项顺序
+        self.mchoice_seq = [] # 预览窗口中所有多选题选项顺序
         self.options = {'solution': True,
                         'random': True,
                         'randomchoice': False,
@@ -34,7 +36,8 @@ class PreviewQuestions(QWidget):
                         'easy': True,
                         'medium': True,
                         'hard': True,
-                        'hell': True}
+                        'hell': True,
+                        'title': ''}
 
     def createPreview(self):
         num_schoice = len(self.schoiceid)
@@ -45,7 +48,7 @@ class PreviewQuestions(QWidget):
         num_proof = len(self.proofid)
         self.webView = QWebEngineView()
         self.webView.setContextMenuPolicy(0) # 禁止右键菜单
-        self.pageSourceContent,_,_ = myfun.generate_html_body(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid)
+        self.pageSourceContent,_,_ = myfun.generate_html_body(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options,schoice_choiceseq=self.schoice_seq,mchoice_choiceseq=self.mchoice_seq)
 
         self.webView.setHtml(myfun.gethtml(self.webView.width(), self.pageSourceContent))
         
@@ -66,15 +69,15 @@ class PreviewQuestions(QWidget):
         # self.chk_distribute = QCheckBox('平均分配各节题目数量')
         # self.chk_save_id = QCheckBox('保存导出题目id')
         # self.chk_save_id.setToolTip('保存导出的题目id，可以在自由选题导出标签页读取')
-        self.chk_solution.setChecked(True)
+        self.chk_solution.setChecked(self.options['solution'])
         # self.chk_randomchoice.setEnabled(False)
-        self.chk_white.setChecked(True)
-        self.chk_follow.setChecked(False)
-        self.chk_notsure.setChecked(True)
-        self.chk_easy.setChecked(True)
-        self.chk_medium.setChecked(True)
-        self.chk_hard.setChecked(True)
-        self.chk_hell.setChecked(True)
+        self.chk_white.setChecked(self.options['white'])
+        self.chk_follow.setChecked(self.options['follow'])
+        self.chk_notsure.setChecked(self.options['notsure'])
+        self.chk_easy.setChecked(self.options['easy'])
+        self.chk_medium.setChecked(self.options['medium'])
+        self.chk_hard.setChecked(self.options['hard'])
+        self.chk_hell.setChecked(self.options['hell'])
         self.chk_solution.clicked.connect(self.chk_solution_clicked)
         self.chk_white.clicked.connect(self.setoptions)
         self.chk_follow.clicked.connect(self.setoptions)
@@ -89,13 +92,21 @@ class PreviewQuestions(QWidget):
         layout_options.addWidget(self.chk_solution, 0, 0)
         layout_options.addWidget(self.chk_follow, 1, 0)
         layout_options.addWidget(self.chk_white, 2, 0)
-        layout_options.addWidget(self.chk_random, 3, 0)
-        layout_options.addWidget(self.chk_randomchoice, 4, 0)
-        layout_options.addWidget(self.chk_notsure, 0, 1)
-        layout_options.addWidget(self.chk_easy, 1, 1)
-        layout_options.addWidget(self.chk_medium, 2, 1)
-        layout_options.addWidget(self.chk_hard, 3, 1)
-        layout_options.addWidget(self.chk_hell, 4, 1)
+        layout_options.addWidget(self.chk_random, 0, 1)
+        layout_options.addWidget(self.chk_randomchoice, 1, 1)
+
+        self.ed_title = QLineEdit()
+        self.ed_title.setPlaceholderText('在此输入导出习题集的标题')
+        self.ed_title.setText(self.options['title'])
+        layout_title = QFormLayout()
+        layout_title.addRow('标题：', self.ed_title)
+        layout_options.addLayout(layout_title, 4, 0, 1, 2)
+
+        layout_options.addWidget(self.chk_notsure, 0, 2)
+        layout_options.addWidget(self.chk_easy, 1, 2)
+        layout_options.addWidget(self.chk_medium, 2, 2)
+        layout_options.addWidget(self.chk_hard, 3, 2)
+        layout_options.addWidget(self.chk_hell, 4, 2)
         layout_options.setHorizontalSpacing(10)
 
         layout_btn = QHBoxLayout()
@@ -120,16 +131,6 @@ class PreviewQuestions(QWidget):
         self.chk_follow.setEnabled(self.chk_solution.isChecked())
         self.setoptions()
 
-    # def chk_white_clicked(self):
-    #     if self.chk_white.isChecked():
-    #         self.chk_follow.setChecked(False)
-    #     self.setoptions()
-
-    # def chk_follow_clicked(self):
-    #     if self.chk_follow.isChecked():
-    #         self.chk_white.setChecked(False)
-    #     self.setoptions()
-            
     def resizeEvent(self, event):
         self.webView.setHtml(myfun.gethtml(self.webView.width(), self.pageSourceContent))
     
@@ -149,7 +150,8 @@ class PreviewQuestions(QWidget):
         self.options['solution'] = self.chk_solution.isChecked()
 
     def export_questions_to_latex(self):
-        result = myfun.export_to_latex(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options)
+        self.options['title'] = self.ed_title.text().strip()
+        result = myfun.export_to_latex(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options,self.schoice_seq,self.mchoice_seq)
         if result[0]:
             QMessageBox.about(self, u'通知', (u'导出文件 %s.tex 成功！' % (result[1])))
         else:
@@ -157,7 +159,8 @@ class PreviewQuestions(QWidget):
             print(result[1])
 
     def export_questions_to_html(self):
-        result = myfun.export_to_html(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options)
+        self.options['title'] = self.ed_title.text().strip()
+        result = myfun.export_to_html(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options,self.schoice_seq,self.mchoice_seq)
         if result[0]:
             QMessageBox.about(self, u'通知', (u'导出文件 %s.html 成功！' % (result[1])))
         else:

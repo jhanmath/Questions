@@ -172,9 +172,9 @@ class AddFillinBlanks(QWidget):
         if num_blanks:
             for i in range(1, num_blanks+1):
                 answer = answer + '第'+str(i)+'空：' + self.answers[i-1].replace('\n','</br>') + '；' 
-        pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '填空题')
-                                    + '</p><p>答案： ' + answer
-                                    + '</p><p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()))
+        pageSourceContent = ('<p>' + myfun.format_question_to_html(self.input_question.toPlainText(), '填空题') + '</p>'
+                                    + '<p>答案： ' + answer + '</p>'
+                                    + '<p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()) + '</p>')
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def update_answer1(self):

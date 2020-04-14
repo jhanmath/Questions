@@ -207,15 +207,15 @@ class AddMultipleChoice(QWidget):
                     if self.pos[j] == i:
                         thisanswer = thisanswer + chr(j+65)
                 answer = answer + '第'+str(i)+'空：' + thisanswer + '；' 
-        pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '多选题')
-                                    + '</p><p>A. ' + self.input_answerA.toPlainText().strip().replace('\n','</br>')
-                                    + '</p><p>B. ' + self.input_answerB.toPlainText().strip().replace('\n','</br>'))
+        pageSourceContent = ('<p>' + myfun.format_question_to_html(self.input_question.toPlainText(), '多选题') + '</p>'
+                                    + '<p>A. ' + self.input_answerA.toPlainText().strip().replace('\n','</br>') + '</p>'
+                                    + '<p>B. ' + self.input_answerB.toPlainText().strip().replace('\n','</br>') + '</p>')
         if self.input_answerC.toPlainText().strip() != '':
-            pageSourceContent += ('</p><p>C. ' + self.input_answerC.toPlainText().strip().replace('\n','</br>'))
+            pageSourceContent += ('<p>C. ' + self.input_answerC.toPlainText().strip().replace('\n','</br>') + '</p>')
         if self.input_answerD.toPlainText().strip() != '':
-            pageSourceContent += ('</p><p>D. ' + self.input_answerD.toPlainText().strip().replace('\n','</br>'))
-        pageSourceContent += ('</p><p>答案: ' + answer
-                                + '</p><p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()))
+            pageSourceContent += ('<p>D. ' + self.input_answerD.toPlainText().strip().replace('\n','</br>') + '</p>')
+        pageSourceContent += ('<p>答案: ' + answer + '</p>'
+                                + '<p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()) + '</p>')
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 

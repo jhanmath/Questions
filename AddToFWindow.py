@@ -151,9 +151,9 @@ class AddToF(QWidget):
     # 更新预览
     def update_preview(self):
         answertext = ['错误', '正确']
-        pageSourceContent = (myfun.format_question_to_html(self.input_question.toPlainText(), '判断题')
-                                    + '</p><p>答案： ' + answertext[self.answer]
-                                    + '</p><p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()))
+        pageSourceContent = ('<p>' + myfun.format_question_to_html(self.input_question.toPlainText(), '判断题') + '</p>'
+                                    + '<p>答案： ' + answertext[self.answer] + '</p>'
+                                    + '<p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()) + '</p>')
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
 
     def insert_question(self):
