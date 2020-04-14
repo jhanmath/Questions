@@ -17,7 +17,7 @@ class AddFillinBlanks(QWidget):
     def __init__(self, parent=None):
         super(AddFillinBlanks, self).__init__(parent)
         # self.setFixedSize(900, 800)
-        self.resize(900,800)
+        self.resize(900,700)
         self.setWindowTitle("添加填空题")
         self.setWindowModality(Qt.ApplicationModal)
         self.answers = ['', '', '', ''] # 设置各填空初始为空

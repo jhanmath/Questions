@@ -762,7 +762,7 @@ def export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,p
         print(e)
         return 0
 
-def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'white':False, 'solution':True, 'randomchoice': False},schoice_choiceseq=[],mchoice_choiceseq=[]):
+def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'white':False, 'solution':True, 'randomchoice': False, 'title': ''},schoice_choiceseq=[],mchoice_choiceseq=[]):
     num_schoice = len(schoiceid)
     num_mchoice = len(mchoiceid)
     num_tof = len(tofid)
