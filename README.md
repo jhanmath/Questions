@@ -15,9 +15,11 @@
   
 在添加过程中支持预览，预览以 MathJax 渲染公式，支持大部分 $\LaTeX$ 语法，具体支持的命令可以参见[这里](https://docs.mathjax.org/en/latest/input/tex/macros/index.html)。
 
-导出的实际上是 $\LaTeX$ 源码，编译 `template.tex` 即可生成题目文档。因此需要安装 $\TeX$ 发行版，或在[overleaf](https://cn.overleaf.com/)等在线 $\LaTeX$ 平台上编译。
+可导出的文档格式有两种
+1. $\LaTeX$ 源码( .tex )，用 `xelatex` 编译即可生成题目文档。因此需要安装 $\TeX$ 发行版，或在[overleaf](https://cn.overleaf.com/)等在线 $\LaTeX$ 平台上编译。
+2. HTML文件( .html )，用浏览器打开即可，可打印成pdf文档。请注意该文档需联网才能正确显示公式，且该文档中对于 MathJax 不支持的 $\LaTeX$ 环境或命令，如 `minipage` 环境、 `tikz` 环境等，将不显示或显示为警告信息。
 
-目前具有以下功能：
+本软件目前主要功能如下：
 - 浏览题库中的题目，可按章节和题目类型筛选
 - 添加、修改、删除题目
 - 导出题目时可选择多个章节，将提示各章节各类型题目数量
