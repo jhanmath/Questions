@@ -1,0 +1,1 @@
+pyinstaller.exe -F -w .\questions.py -i .\icon.ico
