@@ -189,6 +189,30 @@ def format_question_to_html(question, question_type, fromdatabase = 0): # 将题
     newtext = format_subquestion_to_html(newtext)
     return newtext
 
+def format_oint_to_html(text): # 数学环境内的特殊字符处理
+    mathenv1_regex = ['\\$', '\\\\\\(', '\\$\\$', '\\\\\\[', '\\\\begin\{equation']
+    mathenv2_regex = ['\\$', '\\\\\\)', '\\$\\$', '\\\\\\]', '\\\\end\{equation']
+    newtext = text.strip()
+    for i in range(2):
+        pattern = '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')'
+        text_outside = regex.split(pattern, newtext) # 数学环境之外的字符
+        text_in_mathenv = regex.findall(pattern, newtext) # 数学环境之内的字符
+        for j in range(len(text_in_mathenv)):
+            text_in_mathenv[j] = text_in_mathenv[j].replace(r'\oiint',r'\subset\!\!\!\!\!\supset\kern-1.55em\iint').replace(r'\oiiint',r'\subset\!\!\!\!\!\supset\kern-1.75em\iiint')
+        newtext = text_outside[0]
+        for j in range(len(text_in_mathenv)):
+            newtext += (text_in_mathenv[j] + text_outside[j+1])
+    for i in range(2,5):
+        pattern = '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')'
+        text_outside = regex.split(pattern, newtext) # 数学环境之外的字符
+        text_in_mathenv = regex.findall(pattern, newtext) # 数学环境之内的字符
+        for j in range(len(text_in_mathenv)):
+            text_in_mathenv[j] = text_in_mathenv[j].replace(r'\oiint',r'\subset\!\!\!\!\!\supset\kern-1.8em\iint').replace(r'\oiiint',r'\subset\!\!\!\supset\kern-2.3em\iiint')
+        newtext = text_outside[0]
+        for j in range(len(text_in_mathenv)):
+            newtext += (text_in_mathenv[j] + text_outside[j+1])
+    return newtext
+
 def format_enter_to_html(text):
     # 将数学环境以外的回车改成</br>
     mathenv1_regex = ['\\$\\$', '\\$', '\\\\\\(', '\\\\\\[', '\\\\begin\{equation\}']
@@ -202,7 +226,7 @@ def format_enter_to_html(text):
     newtext = text_splited[0].replace('\n', '</br>')
     for i in range(len(keepstring)):
         newtext += (keepstring[i] + text_splited[i+1].replace('\n', '</br>'))
-    return newtext
+    return format_oint_to_html(newtext)
 
 def format_subquestion_to_html(question, fromdatabase = 0): # 格式化字符串中的子问题
     text = question.strip()
