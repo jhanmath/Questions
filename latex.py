@@ -8,6 +8,7 @@ preamble=r'''\usepackage[margin=1in]{geometry}
 \usepackage{enumerate}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{esint}
 \usepackage{extarrows}
 \usepackage{physics}
 \usepackage{tagging}
