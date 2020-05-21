@@ -134,6 +134,8 @@ def gethtml(width, contents=''):
                 inlineMath: [['$','$'],['\\(','\\)']],
                 macros: {
                     Prj: "{\\text{Prj}}",
+                    oiint: "{\\mathop{\\vcenter{\\mathchoice{\\huge\\unicode{x222F}\\kern-0.1em}{\\unicode{x222F}}{\\unicode{x222F}}{\\unicode{x222F}}}}\\nolimits}",
+                    oiiint: "{\\mathop{\\vcenter{\\mathchoice{\\huge\\unicode{x2230}\\kern-0.1em}{\\unicode{x2230}}{\\unicode{x2230}}{\\unicode{x2230}}}}\\nolimits}",
                 }
             }
         };
@@ -176,7 +178,7 @@ def transform_latex_to_plaintext(question): # 从数据库latex转换为窗口�
     text = text.replace('\\begin{enumerate}[(1)]\n', '')
     text = text.replace('\t\t\\end{enumerate}\n', '')
     text = text.replace('\t\t\\end{enumerate}', '')
-    text = text.replace('\t\t\t\\item', '\\sub')
+    text = text.replace('\t\t\t\\item', '\\subq')
     text, _ = regex.subn(r'\\n(?>\\t)+', r'\n', text)
     text, _ = regex.subn( r'\\blank\[(\d+)em\]', r'\\blank{\1}', text)
     return text
@@ -226,18 +228,19 @@ def format_enter_to_html(text):
     newtext = text_splited[0].replace('\n', '</br>')
     for i in range(len(keepstring)):
         newtext += (keepstring[i] + text_splited[i+1].replace('\n', '</br>'))
-    return format_oint_to_html(newtext)
+    # newtext = format_oint_to_html(newtext)
+    return newtext
 
 def format_subquestion_to_html(question, fromdatabase = 0): # 格式化字符串中的子问题
     text = question.strip()
     if fromdatabase == 1:
         text = transform_latex_to_plaintext(text)
     text = format_enter_to_html(text)
-    text , _ = regex.subn(r'(?>\\sub)+', r'\sub', text) # 连续出现多个\sub的话，替换为1个
-    num = text.count(r'\sub')
+    text , _ = regex.subn(r'(?>\\subq)+', r'\subq', text) # 连续出现多个\subq的话，替换为1个
+    num = text.count(r'\subq')
     if num == 0:
         return text
-    splited = text.split(r'\sub')
+    splited = text.split(r'\subq')
     while len(splited[-1]) and splited[-1][0] == '\n':
         splited[-1]=splited[-1][1:]
     splited[-1] = ('(%d)' % (num)) + splited[-1]
@@ -301,11 +304,11 @@ def format_explain_to_latex(text):
 
 def format_subquestion_to_latex(question): # 格式化字符串中的子问题
     text = question.strip()
-    text , _ = regex.subn(r'(?>\\sub)+', r'\sub', text) # 连续出现多个\sub的话，替换为1个
-    num = text.count(r'\sub')
+    text , _ = regex.subn(r'(?>\\subq)+', r'\subq', text) # 连续出现多个\subq的话，替换为1个
+    num = text.count(r'\subq')
     if num == 0:
         return text
-    splited = text.split(r'\sub')
+    splited = text.split(r'\subq')
     splited[-1]=splited[-1].strip()
     if splited[-1].find('\\\\\n') == -1: # 如果最后一段没有回车，则在末尾添加所需字符
         splited[-1] += ('\n\t\t\\end{enumerate}')
