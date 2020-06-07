@@ -661,6 +661,7 @@ class MainWindow(QWidget):
 			self.add_schoice_ui.other_settings.connect(self.update_after_modification)
 			self.add_schoice_ui.modification = self.questionid_in_ModifyBox
 			self.add_schoice_ui.btn_add.setText('修改题目')
+			self.add_schoice_ui.setWindowTitle('修改单选题')
 			self.add_schoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
 			self.add_mchoice_ui = AddMultipleChoice()
@@ -689,6 +690,7 @@ class MainWindow(QWidget):
 			self.add_mchoice_ui.other_settings.connect(self.update_after_modification)
 			self.add_mchoice_ui.modification = self.questionid_in_ModifyBox
 			self.add_mchoice_ui.btn_add.setText('修改题目')
+			self.add_mchoice_ui.setWindowTitle('修改多选题')
 			self.add_mchoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
 			self.add_tof_ui = AddToF()
@@ -710,6 +712,7 @@ class MainWindow(QWidget):
 			self.add_tof_ui.other_settings.connect(self.update_after_modification)
 			self.add_tof_ui.modification = self.questionid_in_ModifyBox
 			self.add_tof_ui.btn_add.setText('修改题目')
+			self.add_tof_ui.setWindowTitle('修改判断题')
 			self.add_tof_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
 			self.add_blank_ui = AddFillinBlanks()
@@ -734,6 +737,7 @@ class MainWindow(QWidget):
 			self.add_blank_ui.other_settings.connect(self.update_after_modification)
 			self.add_blank_ui.modification = self.questionid_in_ModifyBox
 			self.add_blank_ui.btn_add.setText('修改题目')
+			self.add_blank_ui.setWindowTitle('修改填空题')
 			self.add_blank_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
 			self.add_calculation_ui = AddCalculation()
@@ -754,6 +758,7 @@ class MainWindow(QWidget):
 			self.add_calculation_ui.other_settings.connect(self.update_after_modification)
 			self.add_calculation_ui.modification = self.questionid_in_ModifyBox
 			self.add_calculation_ui.btn_add.setText('修改题目')
+			self.add_calculation_ui.setWindowTitle('修改计算题')
 			self.add_calculation_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
 			self.add_proof_ui = AddProof()
@@ -774,6 +779,7 @@ class MainWindow(QWidget):
 			self.add_proof_ui.other_settings.connect(self.update_after_modification)
 			self.add_proof_ui.modification = self.questionid_in_ModifyBox
 			self.add_proof_ui.btn_add.setText('修改题目')
+			self.add_proof_ui.setWindowTitle('修改证明题')
 			self.add_proof_ui.show()
 
 	def btn_delete_clicked(self):
