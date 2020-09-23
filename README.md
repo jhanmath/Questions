@@ -48,6 +48,9 @@
 - 新建数据库
 - 开发在线版
 
+#### 已知问题
+- tabular, minipage, tikzpicture 环境不能被 html 识别
+
 #### Required Python packages
 - webbrowser, requests
 - PyQt5, PyQtWebEngine, sys, os, configparser, regex, random, datetime

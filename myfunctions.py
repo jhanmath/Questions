@@ -34,12 +34,12 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
         questionstring = ''
         if output_type == 0 or output_type == 1:
             questionstring += ('<p>' + format_number + format_question_to_html(question[0], '单选题', fromdatabase)
-                                        + '</p><p>A. ' + format_enter_to_html(question[1])
-                                        + '</p><p>B. ' + format_enter_to_html(question[2]) + '</p>')
+                                        + '</p><p>A. ' + format_subquestion_to_html(question[1])
+                                        + '</p><p>B. ' + format_subquestion_to_html(question[2]) + '</p>')
             if question[3] != '':
-                questionstring += ('<p>C. ' + format_enter_to_html(question[3]) + '</p>')
+                questionstring += ('<p>C. ' + format_subquestion_to_html(question[3]) + '</p>')
             if question[4] != '':
-                questionstring += ('<p>D. ' + format_enter_to_html(question[4]) + '</p>')
+                questionstring += ('<p>D. ' + format_subquestion_to_html(question[4]) + '</p>')
         if output_type == 0 or output_type == 2:
             questionstring += '<p>'
             if output_type == 2:
@@ -50,12 +50,12 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
         questionstring = ''
         if output_type == 0 or output_type == 1:
             questionstring += ('<p>' + format_number + format_question_to_html(question[0], '多选题', fromdatabase)
-                                        + '</p><p>A. ' + format_enter_to_html(question[1])
-                                        + '</p><p>B. ' + format_enter_to_html(question[2]) + '</p>')
+                                        + '</p><p>A. ' + format_subquestion_to_html(question[1])
+                                        + '</p><p>B. ' + format_subquestion_to_html(question[2]) + '</p>')
             if question[3] != '':
-                questionstring += ('<p>C. ' + format_enter_to_html(question[3]) + '</p>')
+                questionstring += ('<p>C. ' + format_subquestion_to_html(question[3]) + '</p>')
             if question[4] != '':
-                questionstring += ('<p>D. ' + format_enter_to_html(question[4]) + '</p>')
+                questionstring += ('<p>D. ' + format_subquestion_to_html(question[4]) + '</p>')
         if output_type == 0 or output_type == 2:
             answer = ''
             answer_raw = question[5:9]
@@ -87,13 +87,13 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
             questionstring += ('<p>' + format_number + format_question_to_html(question[0], '填空题', fromdatabase) + '</p>')
         if output_type == 0 or output_type == 2:
             if question[4] != '':
-                answer = '第1空：%s；第2空：%s；第3空：%s；第四空%s' % (format_enter_to_html(question[1]),format_enter_to_html(question[2]),format_enter_to_html(question[3]),format_enter_to_html(question[4]))
+                answer = '第1空：%s；第2空：%s；第3空：%s；第四空%s' % (format_subquestion_to_html(question[1]),format_subquestion_to_html(question[2]),format_subquestion_to_html(question[3]),format_subquestion_to_html(question[4]))
             elif question[3] != '':
-                answer = '第1空：%s；第2空：%s；第3空：%s' % (format_enter_to_html(question[1]),format_enter_to_html(question[2]),format_enter_to_html(question[3]))
+                answer = '第1空：%s；第2空：%s；第3空：%s' % (format_subquestion_to_html(question[1]),format_subquestion_to_html(question[2]),format_subquestion_to_html(question[3]))
             elif question[2] != '':
-                answer = '第1空：%s；第2空：%s' % (format_enter_to_html(question[1]),format_enter_to_html(question[2]))
+                answer = '第1空：%s；第2空：%s' % (format_subquestion_to_html(question[1]),format_subquestion_to_html(question[2]))
             else:
-                answer = '第1空：%s' % (format_enter_to_html(question[1]))
+                answer = '第1空：%s' % (format_subquestion_to_html(question[1]))
             questionstring += '<p>'
             if output_type == 2:
                 questionstring += format_number
@@ -123,7 +123,7 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
 # path = QDir.current().filePath(r'MathJax-3.0.1/es5/tex-mml-chtml.js') 
 # mathjax = QUrl.fromLocalFile(path).toString()
 def gethtml(width, contents=''):
-    mathjax = QDir.currentPath() + r'/MathJax-3.0.5/es5/tex-mml-chtml.js'
+    mathjax = QDir.currentPath() + r'/MathJax-3.1.2/es5/tex-mml-chtml.js'
     pageSourceHead1 = r'''
     <html><head>
     <script>
@@ -158,22 +158,21 @@ def gethtml(width, contents=''):
     pageSourceFoot = r'''
     </body>
     </html>'''
+    if True:
+        pageSourceHead1 = regex.sub(
+                r'<script type="text\/javascript" id="MathJax-script" async src=".*"><\/script>',
+                '<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>\n<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>',
+                pageSourceHead1
+            )
     return pageSourceHead1 + str(width-5) + pageSourceHead2 + contents + pageSourceFoot
 
 def transform_latex_to_plaintext(question): # 从数据库latex转换为窗口输入的文字
-    # 将数学环境以外的\\删除
-    mathenv1_regex = ['\\$\\$', '\\$', '\\\\\\(', '\\\\\\[', '\\\\begin\{equation\}']
-    mathenv2_regex = ['\\$\\$', '\\$', '\\\\\\)', '\\\\\\]', '\\\\end\{equation\}']
-    text = question.strip()
-    pattern = '(?>' + mathenv1_regex[0] + '(?>.|\\n)*?' + mathenv2_regex[0] + ')'
-    for i in range(1, len(mathenv1_regex)):
-        pattern += ('|' + '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')')
-    text_splited = regex.split(pattern, text)
-    keepstring = regex.findall(pattern, text)
-    text = text_splited[0].replace('\\\\\n', '\n')
-    for i in range(len(keepstring)):
-        text += (keepstring[i] + text_splited[i+1].replace('\\\\\n', '\n'))
-
+    math, nonmath = separate_math_and_nonmath(question.strip())
+    # 删除非数学环境中的换行\\
+    text = nonmath[0].replace('\\\\\n', '\n')
+    for i in range(len(math)):
+        text += (math[i] + nonmath[i+1].replace('\\\\\n', '\n'))
+    # 转换子问题编号
     text = text.replace('\t\t\\begin{enumerate}[(1)]\n', '')
     text = text.replace('\\begin{enumerate}[(1)]\n', '')
     text = text.replace('\t\t\\end{enumerate}\n', '')
@@ -191,43 +190,51 @@ def format_question_to_html(question, question_type, fromdatabase = 0): # 将题
     newtext = format_subquestion_to_html(newtext)
     return newtext
 
-def format_oint_to_html(text): # 数学环境内的特殊字符处理
-    mathenv1_regex = ['\\$', '\\\\\\(', '\\$\\$', '\\\\\\[', '\\\\begin\{equation']
-    mathenv2_regex = ['\\$', '\\\\\\)', '\\$\\$', '\\\\\\]', '\\\\end\{equation']
+# def format_oint_to_html(text): # 数学环境内的闭区域积分符号处理
+#     mathenv1_regex = ['\\$', '\\\\\\(', '\\$\\$', '\\\\\\[', '\\\\begin\{equation']
+#     mathenv2_regex = ['\\$', '\\\\\\)', '\\$\\$', '\\\\\\]', '\\\\end\{equation']
+#     newtext = text.strip()
+#     for i in range(2):
+#         pattern = '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')'
+#         text_outside = regex.split(pattern, newtext) # inline数学环境之外的字符
+#         text_in_mathenv = regex.findall(pattern, newtext) # inline数学环境之内的字符
+#         for j in range(len(text_in_mathenv)):
+#             text_in_mathenv[j] = text_in_mathenv[j].replace(r'\oiint',r'\subset\!\!\!\!\!\supset\kern-1.55em\iint').replace(r'\oiiint',r'\subset\!\!\!\!\!\supset\kern-1.75em\iiint')
+#         newtext = text_outside[0]
+#         for j in range(len(text_in_mathenv)):
+#             newtext += (text_in_mathenv[j] + text_outside[j+1])
+#     for i in range(2,5):
+#         pattern = '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')'
+#         text_outside = regex.split(pattern, newtext) # display数学环境之外的字符
+#         text_in_mathenv = regex.findall(pattern, newtext) # display数学环境之内的字符
+#         for j in range(len(text_in_mathenv)):
+#             text_in_mathenv[j] = text_in_mathenv[j].replace(r'\oiint',r'\subset\!\!\!\!\!\supset\kern-1.8em\iint').replace(r'\oiiint',r'\subset\!\!\!\supset\kern-2.3em\iiint')
+#         newtext = text_outside[0]
+#         for j in range(len(text_in_mathenv)):
+#             newtext += (text_in_mathenv[j] + text_outside[j+1])
+#     return newtext
+
+def format_latexenv_to_html(text):
+    env = ['tabular', 'tikzpicture', 'minipage']
     newtext = text.strip()
-    for i in range(2):
-        pattern = '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')'
-        text_outside = regex.split(pattern, newtext) # 数学环境之外的字符
-        text_in_mathenv = regex.findall(pattern, newtext) # 数学环境之内的字符
-        for j in range(len(text_in_mathenv)):
-            text_in_mathenv[j] = text_in_mathenv[j].replace(r'\oiint',r'\subset\!\!\!\!\!\supset\kern-1.55em\iint').replace(r'\oiiint',r'\subset\!\!\!\!\!\supset\kern-1.75em\iiint')
-        newtext = text_outside[0]
-        for j in range(len(text_in_mathenv)):
-            newtext += (text_in_mathenv[j] + text_outside[j+1])
-    for i in range(2,5):
-        pattern = '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')'
-        text_outside = regex.split(pattern, newtext) # 数学环境之外的字符
-        text_in_mathenv = regex.findall(pattern, newtext) # 数学环境之内的字符
-        for j in range(len(text_in_mathenv)):
-            text_in_mathenv[j] = text_in_mathenv[j].replace(r'\oiint',r'\subset\!\!\!\!\!\supset\kern-1.8em\iint').replace(r'\oiiint',r'\subset\!\!\!\supset\kern-2.3em\iiint')
-        newtext = text_outside[0]
-        for j in range(len(text_in_mathenv)):
-            newtext += (text_in_mathenv[j] + text_outside[j+1])
+    for i in range(len(env)):
+        pattern = '(?>\\\\begin\{(' + env[i] + ')\}(?>.|\\n)*?\\end\{' + env[i] + '\})'
+        newtext , _ = regex.subn(pattern, r'<p style="color:red; margin: 0 auto; text-align: center;"> !!\1 环境不能转化为 Html 格式，请导出为 $\LaTeX$ 格式文档并编译查看!!</p>', newtext)
     return newtext
 
+def format_lessthan_to_html(text):
+    math, nonmath = separate_math_and_nonmath(text)
+    newtext = nonmath[0]
+    for i in range(len(math)):
+        newtext += (math[i].replace('<', '< ') + nonmath[i+1])
+    return newtext
+    
 def format_enter_to_html(text):
     # 将数学环境以外的回车改成</br>
-    mathenv1_regex = ['\\$\\$', '\\$', '\\\\\\(', '\\\\\\[', '\\\\begin\{equation\}']
-    mathenv2_regex = ['\\$\\$', '\\$', '\\\\\\)', '\\\\\\]', '\\\\end\{equation\}']
-    newtext = text.strip()
-    pattern = '(?>' + mathenv1_regex[0] + '(?>.|\\n)*?' + mathenv2_regex[0] + ')'
-    for i in range(1, len(mathenv1_regex)):
-        pattern += ('|' + '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')')
-    text_splited = regex.split(pattern, newtext)
-    keepstring = regex.findall(pattern, newtext)
-    newtext = text_splited[0].replace('\n', '</br>')
-    for i in range(len(keepstring)):
-        newtext += (keepstring[i] + text_splited[i+1].replace('\n', '</br>'))
+    math, nonmath = separate_math_and_nonmath(text)
+    newtext = nonmath[0].replace('\n', '</br>')
+    for i in range(len(math)):
+        newtext += (math[i] + nonmath[i+1].replace('\n', '</br>'))
     # newtext = format_oint_to_html(newtext)
     return newtext
 
@@ -236,6 +243,8 @@ def format_subquestion_to_html(question, fromdatabase = 0): # 格式化字符串
     if fromdatabase == 1:
         text = transform_latex_to_plaintext(text)
     text = format_enter_to_html(text)
+    text = format_lessthan_to_html(text)
+    text = format_latexenv_to_html(text)
     text , _ = regex.subn(r'(?>\\subq)+', r'\subq', text) # 连续出现多个\subq的话，替换为1个
     num = text.count(r'\subq')
     if num == 0:
@@ -257,49 +266,66 @@ def format_subquestion_to_html(question, fromdatabase = 0): # 格式化字符串
 def format_blank_to_html(question, question_type): # 格式化字符串中的空括号和空填空
     text = question.strip()
     if question_type == '单选题' or question_type == '多选题':
+        math, nonmath = separate_math_and_nonmath(text)
         delimiter = r'"\\emptychoice"'
         pattern = r'\emptychoice'
-        text_splited = regex.split(delimiter, question)
-        keepstring = regex.findall(delimiter, question)
-        for i in range(len(text_splited)):
-            s = text_splited[i].replace(pattern, '（&emsp;）')
-            text_splited[i] = s
-        newtext = text_splited[0]
-        for i in range(len(keepstring)):
-            newtext += (keepstring[i] + text_splited[i+1])
+        newtext = nonmath[0].replace(pattern,'（&emsp;）')
+        for i in range(len(math)):
+            newtext += (math[i].replace(pattern,'\text{（&emsp;）}') + nonmath[i+1].replace(pattern,'（&emsp;）'))
     elif question_type == '填空题':
+        math, nonmath = separate_math_and_nonmath(text)
         delimiter = r'"\\blank"|"\\blank\{\d+\}"'
         pattern = r'\\blank\{(\d+)\}'
-        text_splited = regex.split(delimiter, question)
-        keepstring = regex.findall(delimiter, question)
-        for i in range(len(text_splited)):
-            s = text_splited[i]
-            lengths = list(set(regex.findall(pattern, s)))
-            for j in lengths:
-                blank = '<span style="text-decoration:underline">'
-                for k in range(int(j)):
-                    blank += '&emsp;'
-                blank += '</span>'
-                s = s.replace(r'\blank{' + j + '}', blank)
-            s = s.replace(r'\blank', '<span style="text-decoration:underline">&emsp;&emsp;&emsp;</span>')
-            text_splited[i] = s
-        newtext = text_splited[0]
-        for i in range(len(keepstring)):
-            newtext += (keepstring[i] + text_splited[i+1])
+        for ind in range(len(nonmath)):
+            text_splited = regex.split(delimiter, nonmath[ind])
+            keepstring = regex.findall(delimiter, nonmath[ind])
+            for i in range(len(text_splited)):
+                s = text_splited[i]
+                lengths = list(set(regex.findall(pattern, s)))
+                for j in lengths:
+                    blank = '<span style="text-decoration:underline">'
+                    for k in range(int(j)):
+                        blank += '&emsp;'
+                    blank += '</span>'
+                    s = s.replace(r'\blank{' + j + '}', blank)
+                s = s.replace(r'\blank', '<span style="text-decoration:underline">&emsp;&emsp;&emsp;</span>')
+                text_splited[i] = s
+            newtext = text_splited[0]
+            for i in range(len(keepstring)):
+                newtext += (keepstring[i] + text_splited[i+1])
+            nonmath[ind] = newtext
+        for ind in range(len(math)):
+            text_splited = regex.split(delimiter, math[ind])
+            keepstring = regex.findall(delimiter, math[ind])
+            for i in range(len(text_splited)):
+                s = text_splited[i]
+                lengths = list(set(regex.findall(pattern, s)))
+                for j in lengths:
+                    blank = '\mbox{'
+                    for k in range(int(j)):
+                        blank += '__'
+                    blank += '}'
+                    s = s.replace(r'\blank{' + j + '}', blank)
+                s = s.replace(r'\blank', r'\mbox{______}')
+                text_splited[i] = s
+            newtext = text_splited[0]
+            for i in range(len(keepstring)):
+                newtext += (keepstring[i] + text_splited[i+1])
+            math[ind] = newtext
+        newtext = nonmath[0]
+        for i in range(len(math)):
+            newtext += (math[i] + nonmath[i+1])
     else:
         return question
     return newtext
 
 def format_question_to_latex(question, question_type): # 将题干转化为latex
     newtext = format_blank_to_latex(question, question_type)
-    newtext = format_enter_to_latex(newtext)
     newtext = format_subquestion_to_latex(newtext)
     return newtext
 
 def format_explain_to_latex(text):
-    # 以下两函数顺序不能更改
-    newtext = format_enter_to_latex(text)
-    newtext = format_subquestion_to_latex(newtext)
+    newtext = format_subquestion_to_latex(text)
     return newtext
 
 def format_subquestion_to_latex(question): # 格式化字符串中的子问题
@@ -721,7 +747,7 @@ def write_proof_soltuion(f, proof):
     else:
         f.writelines('证明：略\n')
 
-def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options):
+def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq=[], mchoice_choiceseq=[]):
     if options['random']:
         shuffle(schoiceid)
         shuffle(mchoiceid)
@@ -739,7 +765,7 @@ def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,optio
     try:
         filename = ('questions[%s]' % datetime.now().strftime('%Y-%m-%dT%H-%M-%S'))
         filepath = ('%s/exports/%s.html' % (QDir.currentPath(), filename))
-        pageSourceContent, schoice_choiceseq, mchoice_choiceseq = generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options)
+        pageSourceContent, schoice_choiceseq_new, mchoice_choiceseq_new = generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq,mchoice_choiceseq)
         html_source = gethtml(100, pageSourceContent)
         html_source = regex.sub(
             r'<script type="text\/javascript" id="MathJax-script" async src=".*"><\/script>',
@@ -754,7 +780,7 @@ def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,optio
         f = open(filepath, 'w', encoding='utf-8')
         f.writelines(html_source)
         f.close()
-        id_file_result = export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,schoice_choiceseq,mchoice_choiceseq)
+        id_file_result = export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,schoice_choiceseq_new,mchoice_choiceseq_new)
         return 1, filename
     except Exception as e:
         return 0, e
@@ -892,12 +918,12 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
     # 写入证明题
     if num_proof>0:
         sec += 1
-        pageSourceContent += ('<h2>%s、计算题</h2>' % (chinese_num[sec]))
+        pageSourceContent += ('<h2>%s、证明题</h2>' % (chinese_num[sec]))
         for i in range(num_proof):
             thisquestion = mydb.get_proof_by_id(proofid[i])
-            pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', fromdatabase=1,output_type=1)
+            pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1,output_type=1)
             if options['follow']:
-                pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1,output_type=2)
+                pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', fromdatabase=1,output_type=2)
             if options['white']:
                 pageSourceContent += ''.join(['</br>' for i in range(8)])
 
@@ -947,7 +973,7 @@ def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,o
         # 写入证明题
         if num_proof>0:
             sec += 1
-            pageSourceContent += ('<h2>%s、计算题解答</h2>' % (chinese_num[sec]))
+            pageSourceContent += ('<h2>%s、证明题解答</h2>' % (chinese_num[sec]))
             for i in range(num_proof):
                 thisquestion = mydb.get_proof_by_id(proofid[i])
                 pageSourceContent += format_questiondata_to_html(thisquestion, '证明题', str(i+1), fromdatabase=1,output_type=2)
@@ -981,3 +1007,14 @@ def make_choices_random(question, sequence, question_type):
 def generate_ordered_choice(num):
     choice_seq = [[1,2,3,4] for i in range(num)]
     return choice_seq
+
+def separate_math_and_nonmath(text):
+    mathenv_left = ['\\$\\$', '\\$', '\\\\\\(', '\\\\\\[', '\\\\begin\{equation\}']
+    mathenv_right = ['\\$\\$', '\\$', '\\\\\\)', '\\\\\\]', '\\\\end\{equation\}']
+    newtext = text.strip()
+    pattern = '(?>' + mathenv_left[0] + '(?>.|\\n)*?' + mathenv_right[0] + ')'
+    for i in range(1, len(mathenv_left)):
+        pattern += ('|' + '(?>' + mathenv_left[i] + '(?>.|\\n)*?' + mathenv_right[i] + ')')
+    nonmath = regex.split(pattern, newtext)
+    math = regex.findall(pattern, newtext)
+    return math, nonmath

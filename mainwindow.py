@@ -54,14 +54,17 @@ class MainWindow(QWidget):
 		self.tab_modification = QWidget()
 		self.tab_export_by_section = QWidget()
 		self.tab_export_by_question = QWidget()
+		self.tab_settings = QWidget()
 		self.tabs.addTab(self.tab_information, '题库概览')
 		self.tabs.addTab(self.tab_modification, '录入与修改题目')
 		self.tabs.addTab(self.tab_export_by_section, '按章节导出')
 		self.tabs.addTab(self.tab_export_by_question, '自由选题导出')
+		self.tabs.addTab(self.tab_settings, '题库设置')
 		self.tab_informationUI()
 		self.tab_modificationUI()
 		self.tab_export_by_sectionUI()
 		self.tab_export_by_questionUI()
+		self.tab_settingsUI()
 		mainlayout.addWidget(self.tabs)
 
 		layout_about = QHBoxLayout()
@@ -120,6 +123,86 @@ class MainWindow(QWidget):
 		layout.setStretchFactor(self.SelectQuestionBox, 100)
 		self.tab_export_by_question.setLayout(layout)
 		self.update_selectedNum()
+
+	def tab_settingsUI(self):
+		layout = QVBoxLayout()
+		hbox = QHBoxLayout()
+		self.radio_chap_sec = QRadioButton()
+		self.radio_chap_sec.setText('章节设置')
+		self.radio_chap_sec.toggled.connect(self.on_radio_button_toggled)
+		self.radio_difficulty = QRadioButton()
+		self.radio_difficulty.setText('难度设置')
+		self.radio_difficulty.toggled.connect(self.on_radio_button_toggled)
+		self.radio_source = QRadioButton()
+		self.radio_source.setText('题目来源设置')
+		self.radio_source.toggled.connect(self.on_radio_button_toggled)
+		hbox.addWidget(self.radio_chap_sec)
+		hbox.addWidget(self.radio_difficulty)
+		hbox.addWidget(self.radio_source)
+		layout.addLayout(hbox)
+
+		self.stack_chap_sec = QWidget()
+		grid_chap_sec = QGridLayout()
+		self.list_chap_sec_in_settings = QListWidget()
+		self.list_chap_sec_in_settings.addItem('章节')
+		grid_chap_sec.addWidget(self.list_chap_sec_in_settings,0,0,1,4)
+		self.btn_add_chap_in_settings = QPushButton('添加章')
+		self.btn_add_sec_in_settings = QPushButton('添加节')
+		self.btn_modify_chap_sec_in_settings = QPushButton('修改章节名称')
+		self.btn_delete_chap_sec_in_settings = QPushButton('删除章节')
+		grid_chap_sec.addWidget(self.btn_add_chap_in_settings,1,0)
+		grid_chap_sec.addWidget(self.btn_add_sec_in_settings,1,1)
+		grid_chap_sec.addWidget(self.btn_modify_chap_sec_in_settings,1,2)
+		grid_chap_sec.addWidget(self.btn_delete_chap_sec_in_settings,1,3)
+		self.stack_chap_sec.setLayout(grid_chap_sec)
+
+		self.stack_difficulty = QWidget()
+		grid_difficulty = QGridLayout()
+		self.list_difficulty_in_settings = QListWidget()
+		self.list_difficulty_in_settings.addItem('难度')
+		grid_difficulty.addWidget(self.list_difficulty_in_settings,0,0,1,3)
+		self.btn_add_difficulty_in_settings = QPushButton('添加难度')
+		self.btn_modify_difficulty_in_settings = QPushButton('修改难度名称')
+		self.btn_delete_difficulty_in_settings = QPushButton('删除难度')
+		grid_difficulty.addWidget(self.btn_add_difficulty_in_settings,1,0)
+		grid_difficulty.addWidget(self.btn_modify_difficulty_in_settings,1,1)
+		grid_difficulty.addWidget(self.btn_delete_difficulty_in_settings,1,2)
+		self.stack_difficulty.setLayout(grid_difficulty)
+
+		self.stack_source = QWidget()
+		grid_source = QGridLayout()
+		self.list_source_in_settings = QListWidget()
+		self.list_source_in_settings.addItem('来源')
+		grid_source.addWidget(self.list_source_in_settings,0,0,1,3)
+		self.btn_add_source_in_settings = QPushButton('添加来源')
+		self.btn_add_source_in_settings.clicked.connect(self.btn_add_source_in_settings_clicked)
+		self.btn_modify_source_in_settings = QPushButton('修改来源名称')
+		self.btn_modify_source_in_settings.clicked.connect(self.btn_modify_source_in_settings_clicked)
+		self.btn_delete_source_in_settings = QPushButton('删除来源')
+		self.btn_delete_source_in_settings.clicked.connect(self.btn_delete_source_in_settings_clicked)
+		grid_source.addWidget(self.btn_add_source_in_settings,1,0)
+		grid_source.addWidget(self.btn_modify_source_in_settings,1,1)
+		grid_source.addWidget(self.btn_delete_source_in_settings,1,2)
+		self.stack_source.setLayout(grid_source)
+
+		self.stacks_in_settings = QStackedWidget()
+		self.stacks_in_settings.addWidget(self.stack_chap_sec)
+		self.stacks_in_settings.addWidget(self.stack_difficulty)
+		self.stacks_in_settings.addWidget(self.stack_source)
+		layout.addWidget(self.stacks_in_settings)
+		self.tab_settings.setLayout(layout)
+		self.radio_chap_sec.setChecked(True)
+
+	def on_radio_button_toggled(self):
+		radiobutton = self.sender()
+		if radiobutton.isChecked():
+			if radiobutton.text() == '章节设置':
+				self.stacks_in_settings.setCurrentIndex(0)
+			elif radiobutton.text() == '难度设置':
+				self.stacks_in_settings.setCurrentIndex(1)
+			else:
+				self.stacks_in_settings.setCurrentIndex(2)
+				self.update_list_source_in_settings()
 
 	def createDBDisplayBox(self):
 		self.DBDisplayBox = QGroupBox('当前题库')
@@ -1040,6 +1123,74 @@ class MainWindow(QWidget):
 		self.update_checkStatus_in_SelectQuestionBox()
 		self.tabs.setCurrentWidget(self.tab_export_by_question)
 
+	def btn_add_source_in_settings_clicked(self):
+		text, ok = QInputDialog.getText(self,'添加题目来源','请输入要添加的题目来源')
+		if ok:
+			exist = False
+			for item in self.sources:
+				if item[1] == text.strip():
+					exist = True
+					break
+			if exist:
+				QMessageBox.about(self, u'警告', u'题库中已有该来源！')
+			else:
+				insertstring = 'INSERT INTO "main"."sources" ("source") VALUES ("' + text.strip() + '");'
+				if not mydb.insert(insertstring):
+					QMessageBox.about(self, u'警告', u'添加失败，请联系管理员！')
+				else:
+					self.update_list_source_in_settings()
+			
+	def btn_modify_source_in_settings_clicked(self):
+		selected_row = self.list_source_in_settings.currentRow()
+		if selected_row == -1:
+			QMessageBox.about(self, u'警告', u'请选中要修改的条目！')
+			return
+		text, ok = QInputDialog.getText(self,'添加题目来源','请输入要添加的题目来源', QLineEdit.Normal, self.list_source_in_settings.currentItem().text())
+		if ok:
+			exist = False
+			for item in self.sources:
+				if item[1] == text.strip():
+					exist = True
+					break
+			if exist:
+				QMessageBox.about(self, u'警告', u'题库中已有该来源！')
+			else:
+				updatestring = 'UPDATE "main"."sources" SET source="' + text.strip() + '" where id=%d;' % (self.sources[self.list_source_in_settings.currentRow()][0])
+				if not mydb.insert(updatestring):
+					QMessageBox.about(self, u'警告', u'修改失败，请联系管理员！')
+				else:
+					self.update_list_source_in_settings()
+		
+
+	def btn_delete_source_in_settings_clicked(self):
+		selected_row = self.list_source_in_settings.currentRow()
+		if selected_row == -1:
+			QMessageBox.about(self, u'警告', u'请选中要删除的条目！')
+			return
+		source_id = self.sources[self.list_source_in_settings.currentRow()][0]
+		countstring = f'''SELECT sum(num) from (
+						SELECT count(*) as num from schoice where source={source_id}
+						UNION ALL
+						SELECT count(*) as num from mchoice where source={source_id}
+						UNION ALL
+						SELECT count(*) as num from tof where source = {source_id}
+						UNION ALL
+						SELECT count(*) as num from blank where source = {source_id}
+						UNION ALL
+						SELECT count(*) as num from calculation where source = {source_id}
+						UNION ALL
+						SELECT count(*) as num from proof where source = {source_id}
+						) as total'''
+		num = mydb.search(countstring)
+		print(num)
+		if num[0][0] > 0:
+			QMessageBox.about(self, u'警告', f'题库中有 {num[0][0]} 道当前来源题目，不能删除该题目来源！')
+			return
+		deletestring = 'delete from sources where id=%d;' % (self.sources[self.list_source_in_settings.currentRow()][0])
+		if not mydb.insert(deletestring):
+			QMessageBox.about(self, u'警告', u'删除失败，请联系管理员！')
+		else:
+			self.update_list_source_in_settings()
 
 	def chk_select_in_SelectQuestionBox_clicked(self):
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
@@ -1325,6 +1476,7 @@ class MainWindow(QWidget):
 		self.question_data_in_ModifyBox = [i for i in thisquestion[0]]
 		questionstring = myfun.format_questiondata_to_html(self.question_data_in_ModifyBox, self.list_type_of_question_in_ModifyBox.currentText(), fromdatabase=1)
 		pageSourceContent = questionstring
+		# print(myfun.gethtml(self.webView_in_ModifyBox.width(), pageSourceContent))
 		self.webView_in_ModifyBox.setHtml(myfun.gethtml(self.webView_in_ModifyBox.width(), pageSourceContent))
 		index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
 		self.btn_previous.setEnabled(index != 0)
@@ -1427,6 +1579,15 @@ class MainWindow(QWidget):
 		pageSourceContent,_,_ = myfun.generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
 
 		self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width(), pageSourceContent))
+
+	def update_list_source_in_settings(self):
+		self.list_source_in_settings.clear()
+		searchstring = 'select * from sources'
+		self.sources = mydb.search(searchstring)
+		if self.sources:
+			for row in self.sources:
+				self.list_source_in_settings.addItem(row[1])
+		# self.source_id = self.sources[self.list_source_in_settings.currentIndex()][0]
 
 	def retrieve_data(self):
 		searchstring = 'select * from chapters'

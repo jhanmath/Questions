@@ -188,12 +188,12 @@ class AddSingleChoice(QWidget):
     # 更新预览
     def update_preview(self):
         pageSourceContent = ('<p>' + myfun.format_question_to_html(self.input_question.toPlainText(), '单选题') + '</p>'
-                                    + '<p>A. ' + myfun.format_enter_to_html(self.input_answerA.toPlainText()) + '</p>'
-                                    + '<p>B. ' + myfun.format_enter_to_html(self.input_answerB.toPlainText()) + '</p>')
+                                    + '<p>A. ' + myfun.format_subquestion_to_html(self.input_answerA.toPlainText()) + '</p>'
+                                    + '<p>B. ' + myfun.format_subquestion_to_html(self.input_answerB.toPlainText()) + '</p>')
         if self.input_answerC.toPlainText().strip() != '':
-            pageSourceContent += ('<p>C. ' + myfun.format_enter_to_html(self.input_answerC.toPlainText()) + '</p>')
+            pageSourceContent += ('<p>C. ' + myfun.format_subquestion_to_html(self.input_answerC.toPlainText()) + '</p>')
         if self.input_answerD.toPlainText().strip() != '':
-            pageSourceContent += ('<p>D. ' + myfun.format_enter_to_html(self.input_answerD.toPlainText()) + '</p>')
+            pageSourceContent += ('<p>D. ' + myfun.format_subquestion_to_html(self.input_answerD.toPlainText()) + '</p>')
         pageSourceContent += ('<p>答案: ' + self.correct + '</p>'
                                 + '<p>解析： ' + myfun.format_subquestion_to_html(self.input_explain.toPlainText()) + '</p>')
         self.webView.setHtml(myfun.gethtml(self.webView.width(), pageSourceContent))
@@ -227,10 +227,10 @@ class AddSingleChoice(QWidget):
                 columns = '("question", "A", "B", "C", "D", "answer", "explain", "section", "difficulty", "source")'
                 insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
                                     + myfun.format_question_to_latex(self.input_question.toPlainText(), '单选题') + '", "'
-                                    + myfun.format_enter_to_latex(self.input_answerA.toPlainText()) + '", "'
-                                    + myfun.format_enter_to_latex(self.input_answerB.toPlainText()) + '", "'
-                                    + myfun.format_enter_to_latex(self.input_answerC.toPlainText()) + '", "'
-                                    + myfun.format_enter_to_latex(self.input_answerD.toPlainText()) + '", "'
+                                    + myfun.format_subquestion_to_html(self.input_answerA.toPlainText()) + '", "'
+                                    + myfun.format_subquestion_to_html(self.input_answerB.toPlainText()) + '", "'
+                                    + myfun.format_subquestion_to_html(self.input_answerC.toPlainText()) + '", "'
+                                    + myfun.format_subquestion_to_html(self.input_answerD.toPlainText()) + '", "'
                                     + self.correct + '", "'
                                     + myfun.format_explain_to_latex(self.input_explain.toPlainText()) + '", '
                                     + str(self.section_id) + ', '
