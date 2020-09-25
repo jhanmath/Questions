@@ -4,7 +4,11 @@
     主界面
 '''
 
-import sys
+import random
+import os
+import requests
+from webbrowser import open as webopen
+import regex
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -16,9 +20,9 @@ from AddCalculationWindow import *
 from AddProofWindow import *
 from SelectSectionsWindow import *
 from PreviewQuestionsWindow import *
-import random
+
 import myfunctions as myfun
-import database as mydb
+from database import *
 
 
 class MainWindow(QWidget):
@@ -26,12 +30,7 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.04.14'
-		self.selected_sectionids_in_ExportBox = []
-		self.last_added_section_id = 1
-		self.last_added_difficulty_id = 1
-		self.last_added_source_id = 1
-		self.retrieve_data()
+		self.ver = '2020.09.25'
 		self.options = {'solution': True,
 						'random': True,
 						'randomchoice': False,
@@ -46,8 +45,8 @@ class MainWindow(QWidget):
 
 		mainlayout = QVBoxLayout()
 
-		self.createDBDisplayBox()
-		mainlayout.addWidget(self.DBDisplayBox)
+		self.createInfoBox()
+		mainlayout.addLayout(self.InfoLayout)
 
 		self.tabs = QTabWidget()
 		self.tab_information = QWidget()
@@ -79,13 +78,138 @@ class MainWindow(QWidget):
 		self.about.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 		layout_about.addWidget(self.about)
 		mainlayout.addLayout(layout_about)
-
 		self.setLayout(mainlayout)
-
-		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
-
 		self.resize(1000, 700)
 		self.setWindowTitle("数学题库")
+
+		self.btn_addschoice.setEnabled(False)
+		self.btn_addmchoice.setEnabled(False)
+		self.btn_addtof.setEnabled(False)
+		self.btn_addblank.setEnabled(False)
+		self.btn_addcalculation.setEnabled(False)
+		self.btn_addproof.setEnabled(False)
+		self.btn_changesections.setEnabled(False)
+		self.btn_export_to_latex.setEnabled(False)
+		self.btn_switch.setEnabled(False)
+		self.btn_export_to_html.setEnabled(False)
+		self.btn_import_id.setEnabled(False)
+		self.btn_preview.setEnabled(False)
+		self.radio_chap_sec.setEnabled(False)
+		self.radio_source.setEnabled(False)
+		self.radio_difficulty.setEnabled(False)
+		self.stack_chap_sec.setEnabled(False)
+		self.stack_source.setEnabled(False)
+		self.combo_user.setEnabled(False)
+
+		self.thread_update = Thread_update()  # 创建线程
+		self.thread_update.setCurrentVer(self.ver)
+		self.thread_update.res.connect(self.ask_update)
+		self.thread_update.start()  # 开始线程
+
+	def start(self):
+		cwd = QDir.currentPath() + r'/db/'
+		dbpath, _ = QFileDialog.getOpenFileName(self,  
+											"选取数据库文件",  
+											cwd, # 起始路径 
+											"数据库文件 (*.db)")   # 设置文件扩展名过滤,用双分号间隔
+
+		if not dbpath: # 如果没选择文件，即点击取消
+			return
+		try:
+			self.mydb = DataBase(dbpath)
+		except:
+			QMessageBox.about(self, u'警告', u'读取数据库失败！')
+			return
+		self.data_init()
+	
+	def data_init(self):
+		searchstring = 'select name from dbname'
+		self.dbname = self.mydb.search(searchstring)[0][0]
+		self.lbl_dbname.setText(self.dbname)
+
+		self.update_total_questions_sum()
+		self.update_tree_sections()
+		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
+		self.update_combo_users()
+
+		self.btn_addschoice.setEnabled(True)
+		self.btn_addmchoice.setEnabled(True)
+		self.btn_addtof.setEnabled(True)
+		self.btn_addblank.setEnabled(True)
+		self.btn_addcalculation.setEnabled(True)
+		self.btn_addproof.setEnabled(True)
+		self.btn_changesections.setEnabled(True)
+		self.btn_export_to_latex.setEnabled(True)
+		self.btn_switch.setEnabled(True)
+		self.btn_export_to_html.setEnabled(True)
+		self.btn_import_id.setEnabled(True)
+		self.btn_preview.setEnabled(True)
+		self.radio_chap_sec.setEnabled(True)
+		self.radio_source.setEnabled(True)
+		# self.radio_difficulty.setEnabled(True)
+		self.stack_chap_sec.setEnabled(True)
+		self.stack_source.setEnabled(True)
+		self.combo_user.setEnabled(True)
+	
+	def btn_changedb_clicked(self):
+		self.start()
+
+	def btn_newdb_clicked(self):
+		text, ok = QInputDialog.getText(self,'新建题库','请输入要新建的题库名称(课程名)')
+		if ok:
+			cwd = QDir.currentPath() + r'/db/'
+			dbpath, _ = QFileDialog.getSaveFileName(self,  
+                                    "保存数据库文件",  
+                                    cwd, # 起始路径 
+                                    "数据库文件 (*.db)") 
+			if not dbpath: # 如果没保存，即点击取消
+				return
+			if os.path.exists(dbpath):
+				os.remove(dbpath)
+			self.mydb = DataBase(dbpath)
+			self.mydb.build_structure()
+			insertstring = f'INSERT INTO dbname ("name") VALUES ("{text.strip()}");'
+			self.mydb.insert(insertstring)
+			insertstring = f'INSERT INTO users ("name") VALUES ("{self.combo_user.currentText()}");'
+			self.mydb.insert(insertstring)
+			insertstring = f'INSERT INTO difficulties ("difficulty") VALUES ("未知");'
+			self.mydb.insert(insertstring)
+			insertstring = f'INSERT INTO difficulties ("difficulty") VALUES ("简单");'
+			self.mydb.insert(insertstring)
+			insertstring = f'INSERT INTO difficulties ("difficulty") VALUES ("中等");'
+			self.mydb.insert(insertstring)
+			insertstring = f'INSERT INTO difficulties ("difficulty") VALUES ("困难");'
+			self.mydb.insert(insertstring)
+			insertstring = f'INSERT INTO difficulties ("difficulty") VALUES ("地狱");'
+			self.mydb.insert(insertstring)
+			self.data_init()
+
+	def check_settings(self):
+		searchstring = 'select count(*) from users'
+		check_users = self.mydb.search(searchstring)[0][0]
+		searchstring = 'select count(*) from difficulties'
+		check_difficulties = self.mydb.search(searchstring)[0][0]
+		searchstring = 'select count(*) from sections'
+		check_sections = self.mydb.search(searchstring)[0][0]
+		searchstring = 'select count(*) from sources'
+		check_sources = self.mydb.search(searchstring)[0][0]
+		if check_users == 0 or check_difficulties == 0 or check_sections == 0 or check_sources == 0:
+			QMessageBox.about(self, u'警告', u'题库中章节、难度、题目来源、操作人都不能为空，请每项至少添加一个条目！')
+			return False
+		return True
+
+		
+	def update_combo_users(self):
+		self.combo_user.clear()
+		searchstring = 'select * from users'
+		self.users = self.mydb.search(searchstring)
+		for i in range(len(self.users)):
+			self.combo_user.addItem(self.users[i][1])
+
+	def combo_user_changed(self):
+		for item in self.users:
+			if item[1] == self.combo_user.currentText():
+				self.current_userid = item[0]
 
 	def tab_informationUI(self):
 		layout = QVBoxLayout()
@@ -104,6 +228,9 @@ class MainWindow(QWidget):
 		self.createModifyQuestionBox()
 		layout.addWidget(self.ModifyQuestionBox)
 		self.tab_modification.setLayout(layout)
+		self.last_added_section_id = 1
+		self.last_added_difficulty_id = 1
+		self.last_added_source_id = 1
 
 	def tab_export_by_sectionUI(self):
 		layout = QVBoxLayout()
@@ -112,6 +239,7 @@ class MainWindow(QWidget):
 		self.createExportOptionsBox()
 		layout.addWidget(self.ExportOptionsBox)
 		self.tab_export_by_section.setLayout(layout)
+		self.selected_sectionids_in_ExportBox = []
 
 	def tab_export_by_questionUI(self):
 		layout = QVBoxLayout()
@@ -136,20 +264,34 @@ class MainWindow(QWidget):
 		self.radio_source = QRadioButton()
 		self.radio_source.setText('题目来源设置')
 		self.radio_source.toggled.connect(self.on_radio_button_toggled)
+		self.radio_users = QRadioButton()
+		self.radio_users.setText('操作人设置')
+		self.radio_users.toggled.connect(self.on_radio_button_toggled)
 		hbox.addWidget(self.radio_chap_sec)
 		hbox.addWidget(self.radio_difficulty)
 		hbox.addWidget(self.radio_source)
+		hbox.addWidget(self.radio_users)
 		layout.addLayout(hbox)
 
 		self.stack_chap_sec = QWidget()
 		grid_chap_sec = QGridLayout()
-		self.list_chap_sec_in_settings = QListWidget()
-		self.list_chap_sec_in_settings.addItem('章节')
-		grid_chap_sec.addWidget(self.list_chap_sec_in_settings,0,0,1,4)
+		self.tree_sections_in_settings = QTreeWidget()
+		self.tree_sections_in_settings.setColumnCount(1)
+		self.tree_sections_in_settings.setSelectionMode(QAbstractItemView.SingleSelection)
+		self.tree_sections_in_settings.setHeaderLabels(['选择章或节(单选节点)'])
+		self.tree_sections_in_settings.itemSelectionChanged.connect(self.tree_sections_in_settings_changed)
+		grid_chap_sec.addWidget(self.tree_sections_in_settings, 0, 0, 1, 4)
+		self.sectionid_selected_in_settings = 0
+		self.chapterid_selected_in_settings = 0
+		
 		self.btn_add_chap_in_settings = QPushButton('添加章')
+		self.btn_add_chap_in_settings.clicked.connect(self.btn_add_chap_in_settings_clicked)
 		self.btn_add_sec_in_settings = QPushButton('添加节')
+		self.btn_add_sec_in_settings.clicked.connect(self.btn_add_sec_in_settings_clicked)
 		self.btn_modify_chap_sec_in_settings = QPushButton('修改章节名称')
+		self.btn_modify_chap_sec_in_settings.clicked.connect(self.btn_modify_chap_sec_in_settings_clicked)
 		self.btn_delete_chap_sec_in_settings = QPushButton('删除章节')
+		self.btn_delete_chap_sec_in_settings.clicked.connect(self.btn_delete_chap_sec_in_settings_clicked)
 		grid_chap_sec.addWidget(self.btn_add_chap_in_settings,1,0)
 		grid_chap_sec.addWidget(self.btn_add_sec_in_settings,1,1)
 		grid_chap_sec.addWidget(self.btn_modify_chap_sec_in_settings,1,2)
@@ -172,7 +314,7 @@ class MainWindow(QWidget):
 		self.stack_source = QWidget()
 		grid_source = QGridLayout()
 		self.list_source_in_settings = QListWidget()
-		self.list_source_in_settings.addItem('来源')
+		# self.list_source_in_settings.addItem('来源')
 		grid_source.addWidget(self.list_source_in_settings,0,0,1,3)
 		self.btn_add_source_in_settings = QPushButton('添加来源')
 		self.btn_add_source_in_settings.clicked.connect(self.btn_add_source_in_settings_clicked)
@@ -185,10 +327,27 @@ class MainWindow(QWidget):
 		grid_source.addWidget(self.btn_delete_source_in_settings,1,2)
 		self.stack_source.setLayout(grid_source)
 
+		self.stack_users = QWidget()
+		grid_users = QGridLayout()
+		self.list_users_in_settings = QListWidget()
+		# self.list_users_in_settings.addItem('来源')
+		grid_users.addWidget(self.list_users_in_settings,0,0,1,3)
+		self.btn_add_user_in_settings = QPushButton('添加操作人')
+		self.btn_add_user_in_settings.clicked.connect(self.btn_add_user_in_settings_clicked)
+		self.btn_modify_user_in_settings = QPushButton('修改操作人')
+		self.btn_modify_user_in_settings.clicked.connect(self.btn_modify_user_in_settings_clicked)
+		self.btn_delete_user_in_settings = QPushButton('删除操作人')
+		self.btn_delete_user_in_settings.clicked.connect(self.btn_delete_user_in_settings_clicked)
+		grid_users.addWidget(self.btn_add_user_in_settings,1,0)
+		grid_users.addWidget(self.btn_modify_user_in_settings,1,1)
+		grid_users.addWidget(self.btn_delete_user_in_settings,1,2)
+		self.stack_users.setLayout(grid_users)
+
 		self.stacks_in_settings = QStackedWidget()
 		self.stacks_in_settings.addWidget(self.stack_chap_sec)
 		self.stacks_in_settings.addWidget(self.stack_difficulty)
 		self.stacks_in_settings.addWidget(self.stack_source)
+		self.stacks_in_settings.addWidget(self.stack_users)
 		layout.addWidget(self.stacks_in_settings)
 		self.tab_settings.setLayout(layout)
 		self.radio_chap_sec.setChecked(True)
@@ -200,22 +359,43 @@ class MainWindow(QWidget):
 				self.stacks_in_settings.setCurrentIndex(0)
 			elif radiobutton.text() == '难度设置':
 				self.stacks_in_settings.setCurrentIndex(1)
-			else:
+			elif radiobutton.text() == '题目来源设置':
 				self.stacks_in_settings.setCurrentIndex(2)
 				self.update_list_source_in_settings()
+			elif radiobutton.text() == '操作人设置':
+				self.stacks_in_settings.setCurrentIndex(3)
+				self.update_list_users_in_settings()
 
-	def createDBDisplayBox(self):
-		self.DBDisplayBox = QGroupBox('当前题库')
-		layout = QHBoxLayout()
-		searchstring = 'select name from dbname'
-		self.dbname = mydb.search(searchstring)[0][0]
-		self.lbl_dbname = QLabel('当前数据库: ' + self.dbname)
-		self.btn_dbname = QPushButton('更换题库')
-		fm = QFontMetrics(self.btn_dbname.font())
-		self.btn_dbname.setFixedWidth(fm.width(self.btn_dbname.text())+20)
-		layout.addWidget(self.lbl_dbname)
-		layout.addWidget(self.btn_dbname)
-		self.DBDisplayBox.setLayout(layout)
+	def createInfoBox(self):
+		self.DBDisplayBox = QGroupBox('')
+		layout_db = QHBoxLayout()
+		self.lbl_dbnamelabel = QLabel('当前题库: ')
+		# self.lbl_dbnamelabel.setFixedWidth(60)
+		self.lbl_dbname = QLabel('')
+		self.btn_changedb = QPushButton('更换题库')
+		self.btn_changedb.clicked.connect(self.btn_changedb_clicked)
+		self.btn_newdb = QPushButton('新建题库')
+		self.btn_newdb.clicked.connect(self.btn_newdb_clicked)
+		# fm = QFontMetrics(self.btn_changedb.font())
+		# self.btn_changedb.setFixedWidth(fm.width(self.btn_changedb.text())+20)
+		layout_db.addWidget(self.lbl_dbnamelabel, 0, Qt.AlignLeft)
+		layout_db.addWidget(self.lbl_dbname)
+		layout_db.addWidget(self.btn_changedb, 0, Qt.AlignRight)
+		layout_db.addWidget(self.btn_newdb, 0, Qt.AlignRight)
+		# layout_db.setSpacing(5)
+		self.DBDisplayBox.setLayout(layout_db)
+		self.UserBox = QGroupBox('')
+		layout_user = QHBoxLayout()
+		self.lbl_userlabel = QLabel('操作人：')
+		self.combo_user = QComboBox()
+		self.combo_user.currentIndexChanged.connect(self.combo_user_changed)
+		layout_user.addWidget(self.lbl_userlabel)
+		layout_user.addWidget(self.combo_user)
+		self.UserBox.setLayout(layout_user)
+		self.InfoLayout = QHBoxLayout()
+		self.InfoLayout.addWidget(self.DBDisplayBox)
+		self.InfoLayout.addWidget(self.UserBox)
+
 
 	def createTotalQuestionsNumBox(self):
 		self.TotalQuestionsNumBox = QGroupBox('各类型题目总数')
@@ -228,7 +408,7 @@ class MainWindow(QWidget):
 		self.tbl_total_questions_num.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 		self.tbl_total_questions_num.setEditTriggers(QAbstractItemView.NoEditTriggers)
 		self.tbl_total_questions_num.setSelectionMode(QAbstractItemView.NoSelection)
-		self.update_total_questions_sum()
+		# self.update_total_questions_sum()
 		self.tbl_total_questions_num.setFixedHeight(60)
 		self.tbl_total_questions_num.setStyleSheet('''QTableWidget { border: 0; }''')
 		self.tbl_total_questions_num.setGridStyle(0)
@@ -242,26 +422,14 @@ class MainWindow(QWidget):
 
 		self.BrowseBox = QGroupBox('浏览题目')
 		layout = QGridLayout()
-		self.tree_sections = QTreeWidget()
-		self.tree_sections.setColumnCount(1)
-		self.tree_sections.setMinimumWidth(250)
-		self.tree_sections.setMaximumWidth(400)
-		self.tree_sections.setSelectionMode(QAbstractItemView.MultiSelection)
-		self.tree_sections.setHeaderLabels(['选择章节(可多选)'])
-		for i in range(len(self.chapters)):
-			root = QTreeWidgetItem(self.tree_sections)
-			root.setText(0, self.chapters[i][1])
-			secs_in_this_chp = []
-			j = 0
-			for j in range(len(self.sections)):
-				if self.sections[j][2] == self.chapters[i][0]:
-					secs_in_this_chp.append(self.sections[j][1])
-			for j in range(len(secs_in_this_chp)):
-				child = QTreeWidgetItem(root)
-				child.setText(0, secs_in_this_chp[j])
-			self.tree_sections.addTopLevelItem(root)
-		self.tree_sections.clicked.connect(self.tree_sections_clicked)
-		layout.addWidget(self.tree_sections, 0, 0, 2, 1)
+		self.tree_sections_in_BrowseBox = QTreeWidget()
+		self.tree_sections_in_BrowseBox.setColumnCount(1)
+		self.tree_sections_in_BrowseBox.setMinimumWidth(250)
+		self.tree_sections_in_BrowseBox.setMaximumWidth(400)
+		self.tree_sections_in_BrowseBox.setSelectionMode(QAbstractItemView.MultiSelection)
+		self.tree_sections_in_BrowseBox.setHeaderLabels(['选择章节(可多选)'])
+		self.tree_sections_in_BrowseBox.clicked.connect(self.tree_sections_clicked)
+		layout.addWidget(self.tree_sections_in_BrowseBox, 0, 0, 2, 1)
 
 		layout2 = QGridLayout()
 		self.chk_schoice_in_BrowseBox = QCheckBox('单选题')
@@ -311,17 +479,17 @@ class MainWindow(QWidget):
 		self.btn_addtof.clicked.connect(self.btn_addtof_clicked)
 		self.btn_addblank = QPushButton('添加填空题')
 		self.btn_addblank.clicked.connect(self.btn_addblank_clicked)
-		self.btn_addcalculate = QPushButton('添加计算题')
-		self.btn_addcalculate.clicked.connect(self.btn_addcalculate_clicked)
-		self.btn_addprove = QPushButton('添加证明题')
-		self.btn_addprove.clicked.connect(self.btn_addprove_clicked)
+		self.btn_addcalculation = QPushButton('添加计算题')
+		self.btn_addcalculation.clicked.connect(self.btn_addcalculation_clicked)
+		self.btn_addproof = QPushButton('添加证明题')
+		self.btn_addproof.clicked.connect(self.btn_addproof_clicked)
 		layout.setSpacing(10)
 		layout.addWidget(self.btn_addschoice)
 		layout.addWidget(self.btn_addmchoice)
 		layout.addWidget(self.btn_addtof)
 		layout.addWidget(self.btn_addblank)
-		layout.addWidget(self.btn_addcalculate)
-		layout.addWidget(self.btn_addprove)
+		layout.addWidget(self.btn_addcalculation)
+		layout.addWidget(self.btn_addproof)
 		self.AddQuestionBox.setLayout(layout)
 
 	def createModifyQuestionBox(self):
@@ -338,18 +506,6 @@ class MainWindow(QWidget):
 		self.tree_sections_in_ModifyBox.setMaximumWidth(400)
 		self.tree_sections_in_ModifyBox.setSelectionMode(QAbstractItemView.SingleSelection)
 		self.tree_sections_in_ModifyBox.setHeaderLabels(['选择节(单选子节点)'])
-		for i in range(len(self.chapters)):
-			root = QTreeWidgetItem(self.tree_sections_in_ModifyBox)
-			root.setText(0, self.chapters[i][1])
-			secs_in_this_chp = []
-			j = 0
-			for j in range(len(self.sections)):
-				if self.sections[j][2] == self.chapters[i][0]:
-					secs_in_this_chp.append(self.sections[j][1])
-			for j in range(len(secs_in_this_chp)):
-				child = QTreeWidgetItem(root)
-				child.setText(0, secs_in_this_chp[j])
-			self.tree_sections_in_ModifyBox.addTopLevelItem(root)
 		layout.addWidget(self.tree_sections_in_ModifyBox, 0, 0, 3, 1)
 
 		layout2 = QHBoxLayout()
@@ -398,7 +554,7 @@ class MainWindow(QWidget):
 		layout_navi_btn.addWidget(self.btn_next)
 
 		self.update_preview_in_ModifyBox()
-		self.tree_sections_in_ModifyBox.clicked.connect(self.tree_sections_in_ModifyBox_clicked)
+		self.tree_sections_in_ModifyBox.itemSelectionChanged.connect(self.tree_sections_in_ModifyBox_changed)
 		
 		layout.addLayout(layout_navi_btn,2,2)
 		layout.setHorizontalSpacing(20)
@@ -519,6 +675,7 @@ class MainWindow(QWidget):
 		
 		self.ed_title = QLineEdit()
 		self.ed_title.setPlaceholderText('在此输入导出习题集的标题')
+		self.ed_title.setMinimumWidth(300)
 		layout_title = QFormLayout()
 		layout_title.addRow('标题：', self.ed_title)
 		layout_options.addLayout(layout_title, 4, 0, 1, 2)
@@ -563,7 +720,7 @@ class MainWindow(QWidget):
 		self.tbl_selected_num.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 		self.tbl_selected_num.setEditTriggers(QAbstractItemView.NoEditTriggers)
 		self.tbl_selected_num.setSelectionMode(QAbstractItemView.NoSelection)
-		self.update_total_questions_sum()
+		# self.update_total_questions_sum()
 		self.tbl_selected_num.setFixedHeight(60)
 		self.tbl_selected_num.setStyleSheet('''QTableWidget { border: 0; }''')
 		self.tbl_selected_num.setGridStyle(0)
@@ -593,18 +750,6 @@ class MainWindow(QWidget):
 		self.tree_sections_in_SelectQuestionBox.setMaximumWidth(400)
 		self.tree_sections_in_SelectQuestionBox.setSelectionMode(QAbstractItemView.SingleSelection)
 		self.tree_sections_in_SelectQuestionBox.setHeaderLabels(['选择节(单选子节点)'])
-		for i in range(len(self.chapters)):
-			root = QTreeWidgetItem(self.tree_sections_in_SelectQuestionBox)
-			root.setText(0, self.chapters[i][1])
-			secs_in_this_chp = []
-			j = 0
-			for j in range(len(self.sections)):
-				if self.sections[j][2] == self.chapters[i][0]:
-					secs_in_this_chp.append(self.sections[j][1])
-			for j in range(len(secs_in_this_chp)):
-				child = QTreeWidgetItem(root)
-				child.setText(0, secs_in_this_chp[j])
-			self.tree_sections_in_SelectQuestionBox.addTopLevelItem(root)
 		layout.addWidget(self.tree_sections_in_SelectQuestionBox, 0, 0, 3, 1)
 
 		layout2 = QHBoxLayout()
@@ -651,7 +796,7 @@ class MainWindow(QWidget):
 		layout_navi_btn.setSpacing(10)
 
 		self.update_preview_in_SelectQuestionBox()
-		self.tree_sections_in_SelectQuestionBox.clicked.connect(self.tree_sections_in_SelectQuestionBox_clicked)
+		self.tree_sections_in_SelectQuestionBox.itemSelectionChanged.connect(self.tree_sections_in_SelectQuestionBox_changed)
 		
 		layout.addLayout(layout_navi_btn,2,2)
 		layout.setHorizontalSpacing(20)
@@ -660,39 +805,53 @@ class MainWindow(QWidget):
 		self.SelectQuestionBox.setLayout(layout)
 
 	def btn_changesections_clicked(self):
-		self.select_sections_ui = SelectSections()
+		if not self.check_settings():
+			return
+		self.select_sections_ui = SelectSections(self.mydb)
 		self.select_sections_ui.signal.connect(self.update_sections_in_ExportBox)
 		self.singal_sectionid.connect(self.select_sections_ui.initialize)
 		self.singal_sectionid.emit(self.selected_sectionids_in_ExportBox)
 		self.select_sections_ui.show()
 
 	def btn_addschoice_clicked(self):
-		self.add_schoice_ui = AddSingleChoice()
+		if not self.check_settings():
+			return
+		self.add_schoice_ui = AddSingleChoice(self.mydb)
 		self.transmit_settings(self.add_schoice_ui)
 		self.add_schoice_ui.show()
 
 	def btn_addmchoice_clicked(self):
-		self.add_mchoice_ui = AddMultipleChoice()
+		if not self.check_settings():
+			return
+		self.add_mchoice_ui = AddMultipleChoice(self.mydb)
 		self.transmit_settings(self.add_mchoice_ui)
 		self.add_mchoice_ui.show()
 
 	def btn_addtof_clicked(self):
-		self.add_tof_ui = AddToF()
+		if not self.check_settings():
+			return
+		self.add_tof_ui = AddToF(self.mydb)
 		self.transmit_settings(self.add_tof_ui)
 		self.add_tof_ui.show()
 	
 	def btn_addblank_clicked(self):
-		self.add_blank_ui = AddFillinBlanks()
+		if not self.check_settings():
+			return
+		self.add_blank_ui = AddFillinBlanks(self.mydb)
 		self.transmit_settings(self.add_blank_ui)
 		self.add_blank_ui.show()
 
-	def btn_addcalculate_clicked(self):
-		self.add_calculation_ui = AddCalculation()
+	def btn_addcalculation_clicked(self):
+		if not self.check_settings():
+			return
+		self.add_calculation_ui = AddCalculation(self.mydb)
 		self.transmit_settings(self.add_calculation_ui)
 		self.add_calculation_ui.show()
 
-	def btn_addprove_clicked(self):
-		self.add_proof_ui = AddProof()
+	def btn_addproof_clicked(self):
+		if not self.check_settings():
+			return
+		self.add_proof_ui = AddProof(self.mydb)
 		self.transmit_settings(self.add_proof_ui)
 		self.add_proof_ui.show()
 
@@ -710,7 +869,7 @@ class MainWindow(QWidget):
 	
 	def btn_modify_clicked(self):
 		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
-			self.add_schoice_ui = AddSingleChoice()
+			self.add_schoice_ui = AddSingleChoice(self.mydb)
 			self.add_schoice_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_schoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
 			self.add_schoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
@@ -743,11 +902,12 @@ class MainWindow(QWidget):
 			self.add_schoice_ui.list_source.setCurrentIndex(i)
 			self.add_schoice_ui.other_settings.connect(self.update_after_modification)
 			self.add_schoice_ui.modification = self.questionid_in_ModifyBox
+			self.add_schoice_ui.current_userid = self.current_userid
 			self.add_schoice_ui.btn_add.setText('修改题目')
 			self.add_schoice_ui.setWindowTitle('修改单选题')
 			self.add_schoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
-			self.add_mchoice_ui = AddMultipleChoice()
+			self.add_mchoice_ui = AddMultipleChoice(self.mydb)
 			self.add_mchoice_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_mchoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
 			self.add_mchoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
@@ -772,11 +932,12 @@ class MainWindow(QWidget):
 			self.add_mchoice_ui.list_source.setCurrentIndex(i)
 			self.add_mchoice_ui.other_settings.connect(self.update_after_modification)
 			self.add_mchoice_ui.modification = self.questionid_in_ModifyBox
+			self.add_mchoice_ui.current_userid = self.current_userid
 			self.add_mchoice_ui.btn_add.setText('修改题目')
 			self.add_mchoice_ui.setWindowTitle('修改多选题')
 			self.add_mchoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
-			self.add_tof_ui = AddToF()
+			self.add_tof_ui = AddToF(self.mydb)
 			self.add_tof_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_tof_ui.list_answer.setCurrentIndex(self.question_data_in_ModifyBox[1])
 			self.add_tof_ui.input_explain.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[2]))
@@ -794,11 +955,12 @@ class MainWindow(QWidget):
 			self.add_tof_ui.list_source.setCurrentIndex(i)
 			self.add_tof_ui.other_settings.connect(self.update_after_modification)
 			self.add_tof_ui.modification = self.questionid_in_ModifyBox
+			self.add_tof_ui.current_userid = self.current_userid
 			self.add_tof_ui.btn_add.setText('修改题目')
 			self.add_tof_ui.setWindowTitle('修改判断题')
 			self.add_tof_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
-			self.add_blank_ui = AddFillinBlanks()
+			self.add_blank_ui = AddFillinBlanks(self.mydb)
 			self.add_blank_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_blank_ui.input_answer1.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
 			self.add_blank_ui.input_answer2.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
@@ -819,11 +981,12 @@ class MainWindow(QWidget):
 			self.add_blank_ui.list_source.setCurrentIndex(i)
 			self.add_blank_ui.other_settings.connect(self.update_after_modification)
 			self.add_blank_ui.modification = self.questionid_in_ModifyBox
+			self.add_blank_ui.current_userid = self.current_userid
 			self.add_blank_ui.btn_add.setText('修改题目')
 			self.add_blank_ui.setWindowTitle('修改填空题')
 			self.add_blank_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
-			self.add_calculation_ui = AddCalculation()
+			self.add_calculation_ui = AddCalculation(self.mydb)
 			self.add_calculation_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_calculation_ui.input_answer.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[1]))
 			i = 0
@@ -840,11 +1003,12 @@ class MainWindow(QWidget):
 			self.add_calculation_ui.list_source.setCurrentIndex(i)
 			self.add_calculation_ui.other_settings.connect(self.update_after_modification)
 			self.add_calculation_ui.modification = self.questionid_in_ModifyBox
+			self.add_calculation_ui.current_userid = self.current_userid
 			self.add_calculation_ui.btn_add.setText('修改题目')
 			self.add_calculation_ui.setWindowTitle('修改计算题')
 			self.add_calculation_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
-			self.add_proof_ui = AddProof()
+			self.add_proof_ui = AddProof(self.mydb)
 			self.add_proof_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_proof_ui.input_answer.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[1]))
 			i = 0
@@ -861,6 +1025,7 @@ class MainWindow(QWidget):
 			self.add_proof_ui.list_source.setCurrentIndex(i)
 			self.add_proof_ui.other_settings.connect(self.update_after_modification)
 			self.add_proof_ui.modification = self.questionid_in_ModifyBox
+			self.add_proof_ui.current_userid = self.current_userid
 			self.add_proof_ui.btn_add.setText('修改题目')
 			self.add_proof_ui.setWindowTitle('修改证明题')
 			self.add_proof_ui.show()
@@ -880,7 +1045,7 @@ class MainWindow(QWidget):
 				deletestring = ('delete from calculation where id = %d' % (self.questionid_in_ModifyBox))
 			if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
 				deletestring = ('delete from proof where id = %d' % (self.questionid_in_ModifyBox))
-			if mydb.insert(deletestring):
+			if self.mydb.insert(deletestring):
 				QMessageBox.about(self, '通知', '删除成功！')
 				index = self.questionids_in_ModifyBox.index(self.questionid_in_ModifyBox)
 				self.questionids_in_ModifyBox.remove(self.questionid_in_ModifyBox)
@@ -899,7 +1064,7 @@ class MainWindow(QWidget):
 
 	def btn_copy_clicked(self):
 		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
-			self.add_schoice_ui = AddSingleChoice()
+			self.add_schoice_ui = AddSingleChoice(self.mydb)
 			self.add_schoice_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_schoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
 			self.add_schoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
@@ -933,7 +1098,7 @@ class MainWindow(QWidget):
 			self.add_schoice_ui.other_settings.connect(self.update_after_insertion)
 			self.add_schoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
-			self.add_mchoice_ui = AddMultipleChoice()
+			self.add_mchoice_ui = AddMultipleChoice(self.mydb)
 			self.add_mchoice_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_mchoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
 			self.add_mchoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
@@ -959,7 +1124,7 @@ class MainWindow(QWidget):
 			self.add_mchoice_ui.other_settings.connect(self.update_after_insertion)
 			self.add_mchoice_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
-			self.add_tof_ui = AddToF()
+			self.add_tof_ui = AddToF(self.mydb)
 			self.add_tof_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_tof_ui.list_answer.setCurrentIndex(self.question_data_in_ModifyBox[1])
 			self.add_tof_ui.input_explain.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[2]))
@@ -978,7 +1143,7 @@ class MainWindow(QWidget):
 			self.add_tof_ui.other_settings.connect(self.update_after_insertion)
 			self.add_tof_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
-			self.add_blank_ui = AddFillinBlanks()
+			self.add_blank_ui = AddFillinBlanks(self.mydb)
 			self.add_blank_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_blank_ui.input_answer1.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
 			self.add_blank_ui.input_answer2.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
@@ -1000,7 +1165,7 @@ class MainWindow(QWidget):
 			self.add_blank_ui.other_settings.connect(self.update_after_insertion)
 			self.add_blank_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
-			self.add_calculation_ui = AddCalculation()
+			self.add_calculation_ui = AddCalculation(self.mydb)
 			self.add_calculation_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_calculation_ui.input_answer.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[1]))
 			i = 0
@@ -1018,7 +1183,7 @@ class MainWindow(QWidget):
 			self.add_calculation_ui.other_settings.connect(self.update_after_insertion)
 			self.add_calculation_ui.show()
 		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
-			self.add_proof_ui = AddProof()
+			self.add_proof_ui = AddProof(self.mydb)
 			self.add_proof_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
 			self.add_proof_ui.input_answer.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[1]))
 			i = 0
@@ -1049,6 +1214,8 @@ class MainWindow(QWidget):
 		self.update_preview_in_SelectQuestionBox()
 
 	def btn_import_id_clicked(self):
+		if not self.check_settings():
+			return
 		folder = QDir.currentPath() + '/exports/'
 		filename, _ = QFileDialog.getOpenFileName(self, '请选择文件', folder, "txt files (*.txt)")
 		if not filename:
@@ -1095,7 +1262,7 @@ class MainWindow(QWidget):
 		self.update_selectedNum()
 
 	def btn_preview_clicked(self):
-		self.preview_ui = PreviewQuestions()
+		self.preview_ui = PreviewQuestions(self.mydb)
 		self.preview_ui.schoiceid = self.schoiceid_prepare
 		self.preview_ui.mchoiceid = self.mchoiceid_prepare
 		self.preview_ui.tofid = self.tofid_prepare
@@ -1134,8 +1301,8 @@ class MainWindow(QWidget):
 			if exist:
 				QMessageBox.about(self, u'警告', u'题库中已有该来源！')
 			else:
-				insertstring = 'INSERT INTO "main"."sources" ("source") VALUES ("' + text.strip() + '");'
-				if not mydb.insert(insertstring):
+				insertstring = f'INSERT INTO "main"."sources" ("source") VALUES ("{text.strip()}");'
+				if not self.mydb.insert(insertstring):
 					QMessageBox.about(self, u'警告', u'添加失败，请联系管理员！')
 				else:
 					self.update_list_source_in_settings()
@@ -1145,7 +1312,7 @@ class MainWindow(QWidget):
 		if selected_row == -1:
 			QMessageBox.about(self, u'警告', u'请选中要修改的条目！')
 			return
-		text, ok = QInputDialog.getText(self,'添加题目来源','请输入要添加的题目来源', QLineEdit.Normal, self.list_source_in_settings.currentItem().text())
+		text, ok = QInputDialog.getText(self,'修改题目来源','请输入新的题目来源', QLineEdit.Normal, self.list_source_in_settings.currentItem().text())
 		if ok:
 			exist = False
 			for item in self.sources:
@@ -1154,9 +1321,10 @@ class MainWindow(QWidget):
 					break
 			if exist:
 				QMessageBox.about(self, u'警告', u'题库中已有该来源！')
+				return
 			else:
 				updatestring = 'UPDATE "main"."sources" SET source="' + text.strip() + '" where id=%d;' % (self.sources[self.list_source_in_settings.currentRow()][0])
-				if not mydb.insert(updatestring):
+				if not self.mydb.insert(updatestring):
 					QMessageBox.about(self, u'警告', u'修改失败，请联系管理员！')
 				else:
 					self.update_list_source_in_settings()
@@ -1181,16 +1349,213 @@ class MainWindow(QWidget):
 						UNION ALL
 						SELECT count(*) as num from proof where source = {source_id}
 						) as total'''
-		num = mydb.search(countstring)
-		print(num)
+		num = self.mydb.search(countstring)
 		if num[0][0] > 0:
 			QMessageBox.about(self, u'警告', f'题库中有 {num[0][0]} 道当前来源题目，不能删除该题目来源！')
 			return
 		deletestring = 'delete from sources where id=%d;' % (self.sources[self.list_source_in_settings.currentRow()][0])
-		if not mydb.insert(deletestring):
+		if not self.mydb.insert(deletestring):
 			QMessageBox.about(self, u'警告', u'删除失败，请联系管理员！')
 		else:
 			self.update_list_source_in_settings()
+	
+	def btn_add_chap_in_settings_clicked(self):
+		text, ok = QInputDialog.getText(self,'添加章','请输入要添加的章标题')
+		if ok:
+			exist = False
+			for item in self.chapters:
+				if item[1] == text.strip():
+					exist = True
+					break
+			if exist:
+				QMessageBox.about(self, u'警告', u'题库中已有相同的章标题！')
+				return
+			else:
+				insertstring = 'INSERT INTO "main"."chapters" ("chapter") VALUES ("' + text.strip() + '");'
+				if not self.mydb.insert(insertstring):
+					QMessageBox.about(self, u'警告', u'添加失败，请联系管理员！')
+				else:
+					self.update_tree_sections()
+
+	def btn_add_sec_in_settings_clicked(self):
+		if self.chapterid_selected_in_settings == 0 and self.sectionid_selected_in_settings == 0:
+			QMessageBox.about(self, u'警告', u'请选中父级章标题或同级节标题！')
+			return
+		text, ok = QInputDialog.getText(self,'添加节','请输入要添加的节标题')
+		if ok:
+			exist = False
+			for item in self.sections:
+				if item[2] == self.chapterid_selected_in_settings and item[1] == text.strip():
+					exist = True
+					break
+			if exist:
+				QMessageBox.about(self, u'警告', u'选中的章中已有相同的节标题！')
+				return
+			else:
+				insertstring = f'INSERT INTO "main"."sections" ("section", "chapter") VALUES ("{text.strip()}", {self.chapterid_selected_in_settings});'
+				if not self.mydb.insert(insertstring):
+					QMessageBox.about(self, u'警告', u'添加失败，请联系管理员！')
+					return
+				else:
+					self.update_tree_sections()
+	
+	def btn_modify_chap_sec_in_settings_clicked(self):
+		if self.chapterid_selected_in_settings == 0 and self.sectionid_selected_in_settings == 0: # 如果章和节标题都没选中
+			QMessageBox.about(self, u'警告', u'请选中章标题或节标题！')
+			return
+		if self.sectionid_selected_in_settings == 0: # 如果没选中节标题(即当前选中的是章标题)
+			text, ok = QInputDialog.getText(self,'修改章标题','请输入新的章标题')
+			if ok:
+				exist = False
+				for item in self.chapters:
+					if item[1] == text.strip():
+						exist = True
+						break
+				if exist:
+					QMessageBox.about(self, u'警告', u'题库中已有相同的章标题！')
+					return
+				else:
+					updatestring = (f'UPDATE chapters SET chapter="{text.strip()}" where id={self.chapterid_selected_in_settings};')
+					if not self.mydb.insert(updatestring):
+						QMessageBox.about(self, u'警告', u'修改失败，请联系管理员！')
+						return
+					else:
+						self.update_tree_sections()
+						self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
+		elif self.sectionid_selected_in_settings != 0: # 如果选中了节标题
+			text, ok = QInputDialog.getText(self,'修改节标题','请输入新的节标题')
+			if ok:
+				exist = False
+				for item in self.sections:
+					if item[2] == self.chapterid_selected_in_settings and item[1] == text.strip():
+						exist = True
+						break
+				if exist:
+					QMessageBox.about(self, u'警告', u'选中的章中已有相同的节标题！')
+					return
+				else:
+					updatestring = (f'UPDATE sections SET section="{text.strip()}" where id={self.sectionid_selected_in_settings};')
+					if not self.mydb.insert(updatestring):
+						QMessageBox.about(self, u'警告', u'修改失败，请联系管理员！')
+						return
+					else:
+						self.update_tree_sections()
+						self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
+
+	def btn_delete_chap_sec_in_settings_clicked(self):
+		if self.chapterid_selected_in_settings == 0 and self.sectionid_selected_in_settings == 0: # 如果章和节标题都没选中
+			QMessageBox.about(self, u'警告', u'请选中章标题或节标题！')
+			return
+		if self.sectionid_selected_in_settings == 0: # 如果没选中节标题(即当前选中的是章标题)
+			searchstring = f'Select count(*) from sections where chapter={self.chapterid_selected_in_settings}'
+			num = self.mydb.search(searchstring)
+			if num[0][0] > 0:
+				QMessageBox.about(self, u'警告', f'选中的章标题下有 {num[0][0]} 个节标题，不能删除！')
+				return
+			deletestring = f'delete from chapters where id={self.chapterid_selected_in_settings}'
+			if not self.mydb.insert(deletestring):
+				QMessageBox.about(self, u'警告', u'删除失败，请联系管理员！')
+			else:
+				self.update_tree_sections()
+		elif self.sectionid_selected_in_settings != 0: # 如果选中了节标题
+			countstring = f'''SELECT sum(num) from (
+						SELECT count(*) as num from schoice where section={self.sectionid_selected_in_settings}
+						UNION ALL
+						SELECT count(*) as num from mchoice where section={self.sectionid_selected_in_settings}
+						UNION ALL
+						SELECT count(*) as num from tof where section={self.sectionid_selected_in_settings}
+						UNION ALL
+						SELECT count(*) as num from blank where section={self.sectionid_selected_in_settings}
+						UNION ALL
+						SELECT count(*) as num from calculation where section={self.sectionid_selected_in_settings}
+						UNION ALL
+						SELECT count(*) as num from proof where section={self.sectionid_selected_in_settings}
+						) as total'''
+			num = self.mydb.search(countstring)
+			if num[0][0] > 0:
+				QMessageBox.about(self, u'警告', f'选中的节标题下有 {num[0][0]} 道题目，不能删除！')
+				return
+			deletestring = f'delete from sections where id={self.sectionid_selected_in_settings}'
+			if not self.mydb.insert(deletestring):
+				QMessageBox.about(self, u'警告', u'删除失败，请联系管理员！')
+			else:
+				# 以下不能交换顺序
+				if self.selected_sectionids_in_ExportBox.count(self.sectionid_selected_in_settings) != 0:
+					self.selected_sectionids_in_ExportBox.remove(self.sectionid_selected_in_settings)
+					self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
+				self.update_tree_sections()
+
+	def btn_add_user_in_settings_clicked(self):
+		text, ok = QInputDialog.getText(self,'添加操作人','请输入操作人姓名')
+		if ok:
+			exist = False
+			for item in self.users:
+				if item[1] == text.strip():
+					exist = True
+					break
+			if exist:
+				QMessageBox.about(self, u'警告', u'题库中已有同名操作人！')
+			else:
+				insertstring = f'INSERT INTO "main"."users" ("name") VALUES ("{text.strip()}");'
+				if not self.mydb.insert(insertstring):
+					QMessageBox.about(self, u'警告', u'添加失败，请联系管理员！')
+				else:
+					self.update_combo_users()
+					self.update_list_users_in_settings()
+			
+	def btn_modify_user_in_settings_clicked(self):
+		selected_row = self.list_users_in_settings.currentRow()
+		if selected_row == -1:
+			QMessageBox.about(self, u'警告', u'请选中要修改的条目！')
+			return
+		text, ok = QInputDialog.getText(self,'修改操作人姓名','请输入新的操作人', QLineEdit.Normal, self.list_users_in_settings.currentItem().text())
+		if ok:
+			exist = False
+			for item in self.users:
+				if item[1] == text.strip():
+					exist = True
+					break
+			if exist:
+				QMessageBox.about(self, u'警告', u'题库中已有同名操作人！')
+				return
+			else:
+				updatestring = f'UPDATE "main"."users" SET name="{text.strip()}" where id={self.users[self.list_users_in_settings.currentRow()][0]};'
+				if not self.mydb.insert(updatestring):
+					QMessageBox.about(self, u'警告', u'修改失败，请联系管理员！')
+				else:
+					self.update_combo_users()
+					self.update_list_users_in_settings()
+		
+
+	def btn_delete_user_in_settings_clicked(self):
+		selected_row = self.list_users_in_settings.currentRow()
+		if selected_row == -1:
+			QMessageBox.about(self, u'警告', u'请选中要删除的条目！')
+			return
+		user_id = self.users[self.list_users_in_settings.currentRow()][0]
+		countstring = f'''SELECT sum(num) from (
+						SELECT count(*) as num from schoice where inputuser={user_id} or modifyuser={user_id}
+						UNION ALL
+						SELECT count(*) as num from mchoice where inputuser={user_id} or modifyuser={user_id}
+						UNION ALL
+						SELECT count(*) as num from tof where inputuser = {user_id} or modifyuser={user_id}
+						UNION ALL
+						SELECT count(*) as num from blank where inputuser = {user_id} or modifyuser={user_id}
+						UNION ALL
+						SELECT count(*) as num from calculation where inputuser = {user_id} or modifyuser={user_id}
+						UNION ALL
+						SELECT count(*) as num from proof where inputuser = {user_id} or modifyuser={user_id}
+						) as total'''
+		num = self.mydb.search(countstring)
+		if num[0][0] > 0:
+			QMessageBox.about(self, u'警告', f'题库中有 {num[0][0]} 道题目由选中操作人录入或修改，不能删除该操作人！')
+			return
+		deletestring = f'delete from users where id={user_id};'
+		if not self.mydb.insert(deletestring):
+			QMessageBox.about(self, u'警告', u'删除失败，请联系管理员！')
+		else:
+			self.update_combo_users()
+			self.update_list_users_in_settings()
 
 	def chk_select_in_SelectQuestionBox_clicked(self):
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
@@ -1261,7 +1626,7 @@ class MainWindow(QWidget):
 		return QWidget.eventFilter(self, object, event)
 
 	def tree_sections_clicked(self):
-		currentItem = self.tree_sections.currentItem()
+		currentItem = self.tree_sections_in_BrowseBox.currentItem()
 		if currentItem.parent() == None: # 如果点击的是章
 			if (not currentItem.isSelected()) and (currentItem in self.chapters_selected_previously): # 如果上次选中，这次没选中，则设置所有子节点未选中
 				self.chapters_selected_previously.remove(currentItem)
@@ -1275,7 +1640,7 @@ class MainWindow(QWidget):
 			if (not currentItem.isSelected()) and currentItem.parent().isSelected(): # 如果点击的节取消选中，且其父节点章被选中，则设置父节点为未选中
 				currentItem.parent().setSelected(False)
 				self.chapters_selected_previously.remove(currentItem.parent())
-		items = self.tree_sections.selectedItems()
+		items = self.tree_sections_in_BrowseBox.selectedItems()
 		self.selected_sectionsid_in_BrowseBox = []
 		for item in items:
 			if item.parent() != None: # 不是父节点的话
@@ -1287,7 +1652,7 @@ class MainWindow(QWidget):
 				pass
 		self.update_preview_in_BrowseBox()
 
-	def tree_sections_in_ModifyBox_clicked(self):
+	def tree_sections_in_ModifyBox_changed(self):
 		currentItem = self.tree_sections_in_ModifyBox.currentItem()
 		if currentItem.isSelected():
 			if currentItem.parent() != None:
@@ -1301,7 +1666,7 @@ class MainWindow(QWidget):
 			self.sectionid_selected_in_ModifyBox = 0
 		self.retrieve_questionids_in_ModifyBox()
 
-	def tree_sections_in_SelectQuestionBox_clicked(self):
+	def tree_sections_in_SelectQuestionBox_changed(self):
 		currentItem = self.tree_sections_in_SelectQuestionBox.currentItem()
 		if currentItem.isSelected():
 			if currentItem.parent() != None:
@@ -1315,34 +1680,53 @@ class MainWindow(QWidget):
 			self.sectionid_selected_in_SelectQuestionBox = 0
 		self.retrieve_questionids_in_SelectQuestionBox()
 
+	def tree_sections_in_settings_changed(self):
+		currentItem = self.tree_sections_in_settings.currentItem()
+		if currentItem.isSelected(): # 如果选中
+			if currentItem.parent() != None: # 如果选择的是节
+				i = 0
+				while currentItem.text(0) != self.sections[i][1]:
+					i += 1
+				self.sectionid_selected_in_settings = self.sections[i][0]
+				self.chapterid_selected_in_settings = self.sections[i][2]
+			else: # 如果选择的是章
+				i = 0
+				while currentItem.text(0) != self.chapters[i][1]:
+					i += 1
+				self.sectionid_selected_in_settings = 0
+				self.chapterid_selected_in_settings = self.chapters[i][0]
+		else: # 如果没选中
+			self.sectionid_selected_in_settings = 0
+			self.chapterid_selected_in_settings = 0
+
 	def update_total_questions_sum(self): # 更新当前各类问题总数
 		searchstring = ('select count(*) from schoice')
-		num_schoice = mydb.search(searchstring)[0][0]
+		num_schoice = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_schoice))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 0, newItem)
 		searchstring = ('select count(*) from mchoice')
-		num_mchoice = mydb.search(searchstring)[0][0]
+		num_mchoice = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_mchoice))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 1, newItem)
 		searchstring = ('select count(*) from tof')
-		num_tof = mydb.search(searchstring)[0][0]
+		num_tof = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_tof))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 2, newItem)
 		searchstring = ('select count(*) from blank')
-		num_blank = mydb.search(searchstring)[0][0]
+		num_blank = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_blank))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 3, newItem)
 		searchstring = ('select count(*) from calculation')
-		num_calculation = mydb.search(searchstring)[0][0]
+		num_calculation = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_calculation))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 4, newItem)
 		searchstring = ('select count(*) from proof')
-		num_proof = mydb.search(searchstring)[0][0]
+		num_proof = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_proof))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 5, newItem)
@@ -1407,37 +1791,37 @@ class MainWindow(QWidget):
 			newItem = QTableWidgetItem(self.sections[j][1])
 			self.tbl_selectedsections.setItem(i, 0, newItem)
 			searchstring = ('select count(*) from schoice where section=%d' % (sectionids[i]))
-			num_schoice = mydb.search(searchstring)[0][0]
+			num_schoice = self.mydb.search(searchstring)[0][0]
 			total_num_schoice = total_num_schoice + num_schoice
 			newItem = QTableWidgetItem(str(num_schoice))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 1, newItem)
 			searchstring = ('select count(*) from mchoice where section=%d' % (sectionids[i]))
-			num_mchoice = mydb.search(searchstring)[0][0]
+			num_mchoice = self.mydb.search(searchstring)[0][0]
 			total_num_mchoice = total_num_mchoice + num_mchoice
 			newItem = QTableWidgetItem(str(num_mchoice))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 2, newItem)
 			searchstring = ('select count(*) from tof where section=%d' % (sectionids[i]))
-			num_tof = mydb.search(searchstring)[0][0]
+			num_tof = self.mydb.search(searchstring)[0][0]
 			total_num_tof = total_num_tof + num_tof
 			newItem = QTableWidgetItem(str(num_tof))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 3, newItem)
 			searchstring = ('select count(*) from blank where section=%d' % (sectionids[i]))
-			num_blank = mydb.search(searchstring)[0][0]
+			num_blank = self.mydb.search(searchstring)[0][0]
 			total_num_blank = total_num_blank + num_blank
 			newItem = QTableWidgetItem(str(num_blank))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 4, newItem)
 			searchstring = ('select count(*) from calculation where section=%d' % (sectionids[i]))
-			num_calculation = mydb.search(searchstring)[0][0]
+			num_calculation = self.mydb.search(searchstring)[0][0]
 			total_num_calculation = total_num_calculation + num_calculation
 			newItem = QTableWidgetItem(str(num_calculation))
 			newItem.setTextAlignment(Qt.AlignHCenter)
 			self.tbl_selectedsections.setItem(i, 5, newItem)
 			searchstring = ('select count(*) from proof where section=%d' % (sectionids[i]))
-			num_proof = mydb.search(searchstring)[0][0]
+			num_proof = self.mydb.search(searchstring)[0][0]
 			total_num_proof = total_num_proof + num_proof
 			newItem = QTableWidgetItem(str(num_proof))
 			newItem.setTextAlignment(Qt.AlignHCenter)
@@ -1472,7 +1856,7 @@ class MainWindow(QWidget):
 			searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation where id=%d' % (self.questionid_in_ModifyBox))
 		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
 			searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof where id=%d' % (self.questionid_in_ModifyBox))
-		thisquestion = mydb.search(searchstring)
+		thisquestion = self.mydb.search(searchstring)
 		self.question_data_in_ModifyBox = [i for i in thisquestion[0]]
 		questionstring = myfun.format_questiondata_to_html(self.question_data_in_ModifyBox, self.list_type_of_question_in_ModifyBox.currentText(), fromdatabase=1)
 		pageSourceContent = questionstring
@@ -1507,7 +1891,7 @@ class MainWindow(QWidget):
 			searchstring = ('select "question", "answer", "section", "difficulty", "source" from calculation where id=%d' % (self.questionid_in_SelectQuestionBox))
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '证明题':
 			searchstring = ('select "question", "answer", "section", "difficulty", "source" from proof where id=%d' % (self.questionid_in_SelectQuestionBox))
-		thisquestion = mydb.search(searchstring)
+		thisquestion = self.mydb.search(searchstring)
 		self.question_data_in_SelectQuestionBox = [i for i in thisquestion[0]]
 		questionstring = myfun.format_questiondata_to_html(self.question_data_in_SelectQuestionBox, self.list_type_of_question_in_SelectQuestionBox.currentText(), fromdatabase=1)
 		pageSourceContent = questionstring
@@ -1533,6 +1917,61 @@ class MainWindow(QWidget):
 		elif self.list_type_of_question_in_SelectQuestionBox.currentText() == '证明题':
 			self.chk_select_in_SelectQuestionBox.setChecked(self.questionid_in_SelectQuestionBox in self.proofid_prepare)
 
+	def update_tree_sections(self):
+		self.retrieve_data()
+		self.tree_sections_in_BrowseBox.clear()
+		for i in range(len(self.chapters)):
+			root = QTreeWidgetItem(self.tree_sections_in_BrowseBox)
+			root.setText(0, self.chapters[i][1])
+			secs_in_this_chp = []
+			j = 0
+			for j in range(len(self.sections)):
+				if self.sections[j][2] == self.chapters[i][0]:
+					secs_in_this_chp.append(self.sections[j][1])
+			for j in range(len(secs_in_this_chp)):
+				child = QTreeWidgetItem(root)
+				child.setText(0, secs_in_this_chp[j])
+			self.tree_sections_in_BrowseBox.addTopLevelItem(root)
+		self.tree_sections_in_ModifyBox.clear()
+		for i in range(len(self.chapters)):
+			root = QTreeWidgetItem(self.tree_sections_in_ModifyBox)
+			root.setText(0, self.chapters[i][1])
+			secs_in_this_chp = []
+			j = 0
+			for j in range(len(self.sections)):
+				if self.sections[j][2] == self.chapters[i][0]:
+					secs_in_this_chp.append(self.sections[j][1])
+			for j in range(len(secs_in_this_chp)):
+				child = QTreeWidgetItem(root)
+				child.setText(0, secs_in_this_chp[j])
+			self.tree_sections_in_ModifyBox.addTopLevelItem(root)
+		self.tree_sections_in_SelectQuestionBox.clear()
+		for i in range(len(self.chapters)):
+			root = QTreeWidgetItem(self.tree_sections_in_SelectQuestionBox)
+			root.setText(0, self.chapters[i][1])
+			secs_in_this_chp = []
+			j = 0
+			for j in range(len(self.sections)):
+				if self.sections[j][2] == self.chapters[i][0]:
+					secs_in_this_chp.append(self.sections[j][1])
+			for j in range(len(secs_in_this_chp)):
+				child = QTreeWidgetItem(root)
+				child.setText(0, secs_in_this_chp[j])
+			self.tree_sections_in_SelectQuestionBox.addTopLevelItem(root)
+		self.tree_sections_in_settings.clear()
+		for i in range(len(self.chapters)):
+			root = QTreeWidgetItem(self.tree_sections_in_settings)
+			root.setText(0, self.chapters[i][1])
+			secs_in_this_chp = []
+			j = 0
+			for j in range(len(self.sections)):
+				if self.sections[j][2] == self.chapters[i][0]:
+					secs_in_this_chp.append(self.sections[j][1])
+			for j in range(len(secs_in_this_chp)):
+				child = QTreeWidgetItem(root)
+				child.setText(0, secs_in_this_chp[j])
+			self.tree_sections_in_settings.addTopLevelItem(root)
+			
 	# 更新预览
 	def update_preview_in_BrowseBox(self):
 		if not self.selected_sectionsid_in_BrowseBox:
@@ -1542,62 +1981,85 @@ class MainWindow(QWidget):
 		for i in self.selected_sectionsid_in_BrowseBox:
 			sectionstring = sectionstring + ' or section=' + str(i)
 		# 读单选题表
-		searchstring = ('select "id" from schoice' + sectionstring)
-		searchresult = mydb.search(searchstring)
-		schoiceid = [i[0] for i in searchresult]
+		if self.chk_schoice_in_BrowseBox.isChecked():
+			searchstring = ('select "id" from schoice' + sectionstring)
+			searchresult = self.mydb.search(searchstring)
+			schoiceid = [i[0] for i in searchresult]
+		else:
+			schoiceid = []
 		num_schoice = len(schoiceid)
 		# 读多选题表
-		searchstring = ('select "id" from mchoice' + sectionstring)
-		searchresult = mydb.search(searchstring)
-		mchoiceid = [i[0] for i in searchresult]
+		if self.chk_mchoice_in_BrowseBox.isChecked():
+			searchstring = ('select "id" from mchoice' + sectionstring)
+			searchresult = self.mydb.search(searchstring)
+			mchoiceid = [i[0] for i in searchresult]
+		else:
+			mchoiceid = []
 		num_mchoice = len(mchoiceid)
 		# 读判断题表
-		searchstring = ('select "id" from tof' + sectionstring)
-		searchresult = mydb.search(searchstring)
-		tofid = [i[0] for i in searchresult]
+		if self.chk_tof_in_BrowseBox.isChecked():
+			searchstring = ('select "id" from tof' + sectionstring)
+			searchresult = self.mydb.search(searchstring)
+			tofid = [i[0] for i in searchresult]
+		else:
+			tofid = []
 		num_tof = len(tofid)
 		# 读填空题表
-		searchstring = ('select "id" from blank' + sectionstring)
-		searchresult = mydb.search(searchstring)
-		blankid = [i[0] for i in searchresult]
+		if self.chk_blank_in_BrowseBox.isChecked():
+			searchstring = ('select "id" from blank' + sectionstring)
+			searchresult = self.mydb.search(searchstring)
+			blankid = [i[0] for i in searchresult]
+		else:
+			blankid = []
 		num_blank = len(blankid)
 		# 读计算题表
-		searchstring = ('select "id" from calculation' + sectionstring)
-		searchresult = mydb.search(searchstring)
-		calculationid = [i[0] for i in searchresult]
+		if self.chk_calculation_in_BrowseBox.isChecked():
+			searchstring = ('select "id" from calculation' + sectionstring)
+			searchresult = self.mydb.search(searchstring)
+			calculationid = [i[0] for i in searchresult]
+		else:
+			calculationid = []
 		num_calculation = len(calculationid)
 		# 读证明题表
-		searchstring = ('select "id" from proof' + sectionstring)
-		searchresult = mydb.search(searchstring)
-		proofid = [i[0] for i in searchresult]
+		if self.chk_proof_in_BrowseBox.isChecked():
+			searchstring = ('select "id" from proof' + sectionstring)
+			searchresult = self.mydb.search(searchstring)
+			proofid = [i[0] for i in searchresult]
+		else:
+			proofid = []
 		num_proof = len(proofid)
 
 		# if not (num_schoice or num_mchoice or num_tof or num_blank or num_calculation or num_proof):
 		# 	self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width()))
 		# 	return
 		
-		pageSourceContent,_,_ = myfun.generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
+		pageSourceContent,_,_ = myfun.generate_html_body(self.mydb,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid)
 
 		self.webView_in_BrowseBox.setHtml(myfun.gethtml(self.webView_in_BrowseBox.width(), pageSourceContent))
 
 	def update_list_source_in_settings(self):
 		self.list_source_in_settings.clear()
-		searchstring = 'select * from sources'
-		self.sources = mydb.search(searchstring)
+		self.retrieve_data()
 		if self.sources:
 			for row in self.sources:
 				self.list_source_in_settings.addItem(row[1])
-		# self.source_id = self.sources[self.list_source_in_settings.currentIndex()][0]
+
+	def update_list_users_in_settings(self):
+		self.list_users_in_settings.clear()
+		self.retrieve_data()
+		if self.users:
+			for row in self.users:
+				self.list_users_in_settings.addItem(row[1])
 
 	def retrieve_data(self):
 		searchstring = 'select * from chapters'
-		self.chapters = mydb.search(searchstring)
+		self.chapters = self.mydb.search(searchstring)
 		searchstring = 'select * from sections'
-		self.sections = mydb.search(searchstring)
+		self.sections = self.mydb.search(searchstring)
 		searchstring = 'select * from difficulties'
-		self.difficulties = mydb.search(searchstring)
+		self.difficulties = self.mydb.search(searchstring)
 		searchstring = 'select * from sources'
-		self.sources = mydb.search(searchstring)
+		self.sources = self.mydb.search(searchstring)
 
 	def retrieve_questionids_in_ModifyBox(self):
 		if self.sectionid_selected_in_ModifyBox == 0:
@@ -1605,27 +2067,27 @@ class MainWindow(QWidget):
 			return
 		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
 			searchstring = ('select "id" from schoice where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			schoice = mydb.search(searchstring)
+			schoice = self.mydb.search(searchstring)
 			self.questionids_in_ModifyBox = [i[0] for i in schoice] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
 			searchstring = ('select "id" from mchoice where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			mchoice = mydb.search(searchstring)
+			mchoice = self.mydb.search(searchstring)
 			self.questionids_in_ModifyBox = [i[0] for i in mchoice] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
 			searchstring = ('select "id" from tof where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			tof = mydb.search(searchstring)
+			tof = self.mydb.search(searchstring)
 			self.questionids_in_ModifyBox = [i[0] for i in tof] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
 			searchstring = ('select "id" from blank where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			blank = mydb.search(searchstring)
+			blank = self.mydb.search(searchstring)
 			self.questionids_in_ModifyBox = [i[0] for i in blank] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_ModifyBox.currentText() == '计算题':
 			searchstring = ('select "id" from calculation where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			calculation = mydb.search(searchstring)
+			calculation = self.mydb.search(searchstring)
 			self.questionids_in_ModifyBox = [i[0] for i in calculation] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_ModifyBox.currentText() == '证明题':
 			searchstring = ('select "id" from proof where section = %d' % (self.sectionid_selected_in_ModifyBox))
-			proof = mydb.search(searchstring)
+			proof = self.mydb.search(searchstring)
 			self.questionids_in_ModifyBox = [i[0] for i in proof] # 指定章节指定题型的所有id列表
 		if self.questionids_in_ModifyBox:
 			self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[0]
@@ -1639,27 +2101,27 @@ class MainWindow(QWidget):
 			return
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '单选题':
 			searchstring = ('select "id" from schoice where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
-			schoice = mydb.search(searchstring)
+			schoice = self.mydb.search(searchstring)
 			self.questionids_in_SelectQuestionBox = [i[0] for i in schoice] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '多选题':
 			searchstring = ('select "id" from mchoice where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
-			mchoice = mydb.search(searchstring)
+			mchoice = self.mydb.search(searchstring)
 			self.questionids_in_SelectQuestionBox = [i[0] for i in mchoice] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '判断题':
 			searchstring = ('select "id" from tof where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
-			tof = mydb.search(searchstring)
+			tof = self.mydb.search(searchstring)
 			self.questionids_in_SelectQuestionBox = [i[0] for i in tof] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '填空题':
 			searchstring = ('select "id" from blank where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
-			blank = mydb.search(searchstring)
+			blank = self.mydb.search(searchstring)
 			self.questionids_in_SelectQuestionBox = [i[0] for i in blank] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '计算题':
 			searchstring = ('select "id" from calculation where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
-			calculation = mydb.search(searchstring)
+			calculation = self.mydb.search(searchstring)
 			self.questionids_in_SelectQuestionBox = [i[0] for i in calculation] # 指定章节指定题型的所有id列表
 		if self.list_type_of_question_in_SelectQuestionBox.currentText() == '证明题':
 			searchstring = ('select "id" from proof where section = %d' % (self.sectionid_selected_in_SelectQuestionBox))
-			proof = mydb.search(searchstring)
+			proof = self.mydb.search(searchstring)
 			self.questionids_in_SelectQuestionBox = [i[0] for i in proof] # 指定章节指定题型的所有id列表
 		if self.questionids_in_SelectQuestionBox:
 			self.questionid_in_SelectQuestionBox = self.questionids_in_SelectQuestionBox[0]
@@ -1670,16 +2132,23 @@ class MainWindow(QWidget):
 	def transmit_settings(self, ui): # 将设置传递给打开的子窗口
 		ui.other_settings.connect(self.update_after_insertion)
 		i = 0
-		while self.last_added_section_id != self.sections[i][0]:
-			i += 1
+		for j in range(len(self.sections)):
+			if self.last_added_section_id == self.sections[j][0]:
+				i = j
+				break
 		ui.list_section.setCurrentIndex(i)
 		i = 0
-		while self.last_added_difficulty_id != self.difficulties[i][0]:
-			i += 1
+		for j in range(len(self.difficulties)):
+			if self.last_added_difficulty_id == self.difficulties[i][0]:
+				i = j
+				break
 		ui.list_difficulty.setCurrentIndex(i)
 		i = 0
-		while self.last_added_source_id != self.sources[i][0]:
-			i += 1
+		for j in range(len(self.sources)):
+			if self.last_added_source_id != self.sources[i][0]:
+				i = j
+				break
+		ui.current_userid = self.current_userid
 		ui.list_source.setCurrentIndex(i)
 	
 	def setoptions(self):
@@ -1710,7 +2179,7 @@ class MainWindow(QWidget):
 			return
 		
 		self.options['title'] = self.ed_title.text().strip()
-		result = myfun.export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
+		result = myfun.export_to_latex(self.mydb,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
 		if result[0]:
 			QMessageBox.about(self, u'通知', (u'导出文件 %s.tex 成功！' % (result[1])))
 		else:
@@ -1739,7 +2208,7 @@ class MainWindow(QWidget):
 			return
 		
 		self.options['title'] = self.ed_title.text().strip()
-		result = myfun.export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
+		result = myfun.export_to_html(self.mydb,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,self.options)
 		if result[0]:
 			QMessageBox.about(self, u'通知', (u'导出文件 %s.html 成功！' % (result[1])))
 		else:
@@ -1817,7 +2286,7 @@ class MainWindow(QWidget):
 		for i in range(0, len(self.selected_sectionids_in_ExportBox)):
 			sectionstring = (' where (section=' + str(self.selected_sectionids_in_ExportBox[i]) + ')')
 			searchstring = ('select "id" from ' + question_type + sectionstring + difficultystring)
-			searchresult = mydb.search(searchstring)
+			searchresult = self.mydb.search(searchstring)
 			id_by_sections.append([i[0] for i in searchresult])
 			num_id_by_sections.append(len(id_by_sections[-1]))
 		while sum(num_id_by_sections) > num_target:
@@ -1841,4 +2310,31 @@ class MainWindow(QWidget):
 			for j in ids:
 				questionid.append(j)
 		return questionid
-	
+
+	def ask_update(self, remote_ver):
+		if remote_ver > self.ver:
+			reply = QMessageBox.question(
+				self, '升级', f'检测到新版本{remote_ver}，当前版本为{self.ver}，是否前往下载更新？',
+				QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+			if reply == QMessageBox.Yes:
+				webopen('http://www.jhanmath.com/?page_id=228')
+
+class Thread_update(QThread):
+	res = pyqtSignal(str)
+
+	def __init__(self, parent=None):
+		super(Thread_update, self).__init__(parent)
+
+	def setCurrentVer(self, ver):
+		self.ver = ver
+
+	def run(self):
+		url = 'http://www.jhanmath.com/wp-content/uploads/softwares/questions/README.md'
+		try:
+			res = requests.get(url)
+			if res.status_code == requests.codes.ok:
+				pattern = r"ver. \d{4}.\d{2}.\d{2}"
+				remote_ver = regex.search(pattern, res.text)
+				self.res.emit(remote_ver.group()[-10:])
+		except Exception:
+			pass

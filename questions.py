@@ -14,4 +14,5 @@ if __name__ == '__main__':
     app.setWindowIcon(QIcon(iconpath))
     main_ui = MainWindow()
     main_ui.show()
+    main_ui.start()
     sys.exit(app.exec_())

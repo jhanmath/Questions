@@ -7,14 +7,14 @@
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-import database as mydb
 
 class SelectSections(QWidget):
     signal = pyqtSignal(list)
 
-    def __init__(self, parent=None):
+    def __init__(self, db, parent=None):
         super(SelectSections, self).__init__(parent)
         # self.setFixedSize(900, 800)
+        self.mydb = db
         self.resize(900,500)
         self.setWindowTitle("选择章节")
         self.setWindowModality(Qt.ApplicationModal)
@@ -50,9 +50,9 @@ class SelectSections(QWidget):
     # 获取数据库中的章节
     def initialize_data(self):
         searchstring = 'select * from chapters'
-        self.chapters = mydb.search(searchstring)
+        self.chapters = self.mydb.search(searchstring)
         searchstring = 'select * from sections'
-        self.sections = mydb.search(searchstring)
+        self.sections = self.mydb.search(searchstring)
         self.sectionid_candidates = [item[0] for item in self.sections] # 候选章节id
         self.sectionid_selected = [] # 设置初始选择章节id为空
         self.chapter_selected_in_candidates_previously = [] # 候选树中上次选中的章节点，实现选中章则选中节效果

@@ -6,7 +6,7 @@ from random import shuffle
 from datetime import datetime
 import random
 import latex
-import database as mydb
+from database import *
 
 def mathlength(string):
     string_altered = string
@@ -410,7 +410,7 @@ def format_enter_to_latex(text): # 将latex环境以外的回车改为\\+回车
 def find_text_enter(text):
     pass
 
-def export_to_latex(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'white':False, 'solution':True, 'randomchoice': False},schoice_choiceseq=[],mchoice_choiceseq=[]):
+def export_to_latex(mydb, schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'white':False, 'solution':True, 'randomchoice': False},schoice_choiceseq=[],mchoice_choiceseq=[]):
     if options['random']:
         shuffle(schoiceid)
         shuffle(mchoiceid)
@@ -747,7 +747,7 @@ def write_proof_soltuion(f, proof):
     else:
         f.writelines('证明：略\n')
 
-def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq=[], mchoice_choiceseq=[]):
+def export_to_html(mydb,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq=[],mchoice_choiceseq=[]):
     if options['random']:
         shuffle(schoiceid)
         shuffle(mchoiceid)
@@ -765,7 +765,7 @@ def export_to_html(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,optio
     try:
         filename = ('questions[%s]' % datetime.now().strftime('%Y-%m-%dT%H-%M-%S'))
         filepath = ('%s/exports/%s.html' % (QDir.currentPath(), filename))
-        pageSourceContent, schoice_choiceseq_new, mchoice_choiceseq_new = generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq,mchoice_choiceseq)
+        pageSourceContent, schoice_choiceseq_new, mchoice_choiceseq_new = generate_html_body(mydb,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq,mchoice_choiceseq)
         html_source = gethtml(100, pageSourceContent)
         html_source = regex.sub(
             r'<script type="text\/javascript" id="MathJax-script" async src=".*"><\/script>',
@@ -815,7 +815,7 @@ def export_questionid(filename,schoiceid,mchoiceid,tofid,blankid,calculationid,p
         print(e)
         return 0
 
-def generate_html_body(schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'white':False, 'solution':True, 'randomchoice': False, 'title': ''},schoice_choiceseq=[],mchoice_choiceseq=[]):
+def generate_html_body(mydb,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options={'follow':True,'white':False, 'solution':True, 'randomchoice': False, 'title': ''},schoice_choiceseq=[],mchoice_choiceseq=[]):
     num_schoice = len(schoiceid)
     num_mchoice = len(mchoiceid)
     num_tof = len(tofid)

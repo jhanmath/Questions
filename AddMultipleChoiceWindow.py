@@ -8,15 +8,17 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-import database as mydb
+from datetime import datetime
 import myfunctions as myfun
 
 class AddMultipleChoice(QWidget):
     other_settings = pyqtSignal(list)
     
-    def __init__(self, parent=None):
+    def __init__(self, db, parent=None):
         super(AddMultipleChoice, self).__init__(parent)
         # self.setFixedSize(900, 800)
+        self.mydb = db
+        self.current_userid = 1
         self.resize(900,700)
         self.setWindowTitle("添加多选题")
         self.setWindowModality(Qt.ApplicationModal)
@@ -143,7 +145,7 @@ class AddMultipleChoice(QWidget):
     def update_list_section(self):
         self.list_section.clear()
         searchstring = 'select * from sections'
-        self.sections = mydb.search(searchstring)
+        self.sections = self.mydb.search(searchstring)
         if self.sections:
             for row in self.sections:
                 self.list_section.addItem(row[1])
@@ -153,7 +155,7 @@ class AddMultipleChoice(QWidget):
     def update_list_difficulty(self):
         self.list_difficulty.clear()
         searchstring = 'select * from difficulties'
-        self.difficulties = mydb.search(searchstring)
+        self.difficulties = self.mydb.search(searchstring)
         if self.difficulties:
             for row in self.difficulties:
                 self.list_difficulty.addItem(row[1])
@@ -163,7 +165,7 @@ class AddMultipleChoice(QWidget):
     def update_list_source(self):
         self.list_source.clear()
         searchstring = 'select * from sources'
-        self.sources = mydb.search(searchstring)
+        self.sources = self.mydb.search(searchstring)
         if self.sources:
             for row in self.sources:
                 self.list_source.addItem(row[1])
@@ -246,24 +248,26 @@ class AddMultipleChoice(QWidget):
         else:
             add = True
         if add:
-            table = ' "main"."mchoice"'
+            table = '"main"."mchoice"'
             if self.modification == 0:
-                columns = '("question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source")'
-                insertstring = ('INSERT INTO' + table + columns + ' VALUES ("'
-                                    + myfun.format_question_to_latex(self.input_question.toPlainText(), '多选题') + '", "'
-                                    + myfun.format_enter_to_latex(self.input_answerA.toPlainText()) + '", "'
-                                    + myfun.format_enter_to_latex(self.input_answerB.toPlainText()) + '", "'
-                                    + myfun.format_enter_to_latex(self.input_answerC.toPlainText()) + '", "'
-                                    + myfun.format_enter_to_latex(self.input_answerD.toPlainText()) + '", '
-                                    + str(self.pos[0]) + ', '
-                                    + str(self.pos[1]) + ', '
-                                    + str(self.pos[2]) + ', '
-                                    + str(self.pos[3]) + ', "'
-                                    + myfun.format_explain_to_latex(self.input_explain.toPlainText()) + '", '
-                                    + str(self.section_id) + ', '
-                                    + str(self.difficulty_id) + ', '
-                                    + str(self.source_id) + ');')
-                if mydb.insert(insertstring):
+                columns = '("question", "A", "B", "C", "D", "pos_A", "pos_B", "pos_C", "pos_D", "explain", "section", "difficulty", "source", "inputuser", "inputdate")'
+                insertstring = (f'INSERT INTO {table} {columns} VALUES ('
+                                f'"{myfun.format_question_to_latex(self.input_question.toPlainText(), "多选题")}", '
+                                f'"{myfun.format_enter_to_latex(self.input_answerA.toPlainText())}", '
+                                f'"{myfun.format_enter_to_latex(self.input_answerB.toPlainText())}", '
+                                f'"{myfun.format_enter_to_latex(self.input_answerC.toPlainText())}", '
+                                f'"{myfun.format_enter_to_latex(self.input_answerD.toPlainText())}", '
+                                f'{self.pos[0]}, '
+                                f'{self.pos[1]}, '
+                                f'{self.pos[2]}, '
+                                f'{self.pos[3]}, '
+                                f'"{myfun.format_explain_to_latex(self.input_explain.toPlainText())}", '
+                                f'{self.section_id}, '
+                                f'{self.difficulty_id}, '
+                                f'{self.source_id}, '
+                                f'{self.current_userid}, '
+                                f'"{datetime.now().strftime("%Y/%m/%dT%H:%M:%S")}");')
+                if self.mydb.insert(insertstring):
                     self.other_settings.emit([self.section_id, self.difficulty_id, self.source_id])
                     reply = QMessageBox.information(self, u'通知', u'添加题目成功！是否关闭当前窗口？', QMessageBox.Yes, QMessageBox.No)
                     if reply == QMessageBox.Yes:
@@ -271,22 +275,23 @@ class AddMultipleChoice(QWidget):
                 else:
                     QMessageBox.about(self, u'错误', u'添加题目失败！')
             else:
-                updatestring = ('UPDATE ' + table + ' SET question="%s", A="%s", B="%s", C="%s", D="%s", pos_A=%d, pos_B=%d, pos_C=%d, pos_D=%d, explain="%s", section=%d, difficulty=%d, source=%d where id=%d;'
-                                % (myfun.format_question_to_latex(self.input_question.toPlainText(), '多选题'),
-                                    myfun.format_enter_to_latex(self.input_answerA.toPlainText()),
-                                    myfun.format_enter_to_latex(self.input_answerB.toPlainText()),
-                                    myfun.format_enter_to_latex(self.input_answerC.toPlainText()),
-                                    myfun.format_enter_to_latex(self.input_answerD.toPlainText()),
-                                    self.pos[0],
-                                    self.pos[1],
-                                    self.pos[2],
-                                    self.pos[3],
-                                    myfun.format_explain_to_latex(self.input_explain.toPlainText()),
-                                    self.section_id,
-                                    self.difficulty_id,
-                                    self.source_id,
-                                    self.modification))
-                if mydb.insert(updatestring):
+                updatestring = (f'UPDATE {table} SET question="{myfun.format_question_to_latex(self.input_question.toPlainText(), "多选题")}", '
+                                f'A="{myfun.format_enter_to_latex(self.input_answerA.toPlainText())}", '
+                                f'B="{myfun.format_enter_to_latex(self.input_answerB.toPlainText())}", '
+                                f'C="{myfun.format_enter_to_latex(self.input_answerC.toPlainText())}", '
+                                f'D="{myfun.format_enter_to_latex(self.input_answerD.toPlainText())}", '
+                                f'pos_A={self.pos[0]}, '
+                                f'pos_B={self.pos[1]}, '
+                                f'pos_C={self.pos[2]}, '
+                                f'pos_D={self.pos[3]}, '
+                                f'explain="{myfun.format_explain_to_latex(self.input_explain.toPlainText())}", '
+                                f'section={self.section_id}, '
+                                f'difficulty={self.difficulty_id}, '
+                                f'source={self.source_id}, '
+                                f'modifyuser={self.current_userid}, '
+                                f'modifydate="{datetime.now().strftime("%Y/%m/%dT%H:%M:%S")}" '
+                                f'where id={self.modification};')
+                if self.mydb.insert(updatestring):
                     self.other_settings.emit([self.section_id, self.difficulty_id, self.source_id])
                     reply = QMessageBox.information(self, u'通知', u'修改题目成功！是否关闭当前窗口？', QMessageBox.Yes, QMessageBox.No)
                     if reply == QMessageBox.Yes:

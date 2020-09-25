@@ -8,14 +8,14 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-import database as mydb
 import myfunctions as myfun
 import sys
 
 class PreviewQuestions(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, db, parent=None):
         super(PreviewQuestions, self).__init__(parent)
         # self.setFixedSize(900, 800)
+        self.mydb = db
         self.resize(900, 700)
         self.setWindowTitle("预览选中的问题")
         self.setWindowModality(Qt.ApplicationModal)
@@ -48,7 +48,7 @@ class PreviewQuestions(QWidget):
         num_proof = len(self.proofid)
         self.webView = QWebEngineView()
         self.webView.setContextMenuPolicy(0) # 禁止右键菜单
-        self.pageSourceContent,_,_ = myfun.generate_html_body(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options,schoice_choiceseq=self.schoice_seq,mchoice_choiceseq=self.mchoice_seq)
+        self.pageSourceContent,_,_ = myfun.generate_html_body(self.mydb,self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options,schoice_choiceseq=self.schoice_seq,mchoice_choiceseq=self.mchoice_seq)
 
         self.webView.setHtml(myfun.gethtml(self.webView.width(), self.pageSourceContent))
         
@@ -99,6 +99,7 @@ class PreviewQuestions(QWidget):
         self.ed_title = QLineEdit()
         self.ed_title.setPlaceholderText('在此输入导出习题集的标题')
         self.ed_title.setText(self.options['title'])
+        self.ed_title.setMinimumWidth(300)
         layout_title = QFormLayout()
         layout_title.addRow('标题：', self.ed_title)
         layout_options.addLayout(layout_title, 4, 0, 1, 2)
@@ -152,7 +153,7 @@ class PreviewQuestions(QWidget):
 
     def export_questions_to_latex(self):
         self.options['title'] = self.ed_title.text().strip()
-        result = myfun.export_to_latex(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options,self.schoice_seq,self.mchoice_seq)
+        result = myfun.export_to_latex(self.mydb,self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options,self.schoice_seq,self.mchoice_seq)
         if result[0]:
             QMessageBox.about(self, u'通知', (u'导出文件 %s.tex 成功！' % (result[1])))
         else:
@@ -161,7 +162,7 @@ class PreviewQuestions(QWidget):
 
     def export_questions_to_html(self):
         self.options['title'] = self.ed_title.text().strip()
-        result = myfun.export_to_html(self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options,self.schoice_seq,self.mchoice_seq)
+        result = myfun.export_to_html(self.mydb,self.schoiceid,self.mchoiceid,self.tofid,self.blankid,self.calculationid,self.proofid,self.options,self.schoice_seq,self.mchoice_seq)
         if result[0]:
             QMessageBox.about(self, u'通知', (u'导出文件 %s.html 成功！' % (result[1])))
         else:
