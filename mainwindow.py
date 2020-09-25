@@ -642,7 +642,7 @@ class MainWindow(QWidget):
 		self.chk_random = QCheckBox('打乱题目顺序')
 		self.chk_randomchoice = QCheckBox('打乱选择题选项顺序')
 		self.chk_white = QCheckBox('主观题后留空')
-		self.chk_follow = QCheckBox('解答跟随小题')
+		self.chk_follow = QCheckBox('解答跟随题干')
 		self.chk_notsure = QCheckBox('未知难度')
 		self.chk_easy = QCheckBox('简单难度')
 		self.chk_medium = QCheckBox('中等难度')
