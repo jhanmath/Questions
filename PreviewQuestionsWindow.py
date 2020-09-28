@@ -130,6 +130,8 @@ class PreviewQuestions(QWidget):
         self.setLayout(mainlayout)
 
     def chk_solution_clicked(self):
+        if not self.chk_solution.isChecked():
+            self.chk_follow.setChecked(False)
         self.chk_follow.setEnabled(self.chk_solution.isChecked())
         self.setoptions()
 

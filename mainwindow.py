@@ -30,7 +30,7 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.09.25'
+		self.ver = '2020.09.28'
 		self.options = {'solution': True,
 						'random': True,
 						'randomchoice': False,
@@ -69,7 +69,7 @@ class MainWindow(QWidget):
 		layout_about = QHBoxLayout()
 		self.download_demo = QLabel(
 			'<a href = "http://www.jhanmath.com/?page_id=228">'
-			'下载视频演示</a>')
+			'观看视频演示</a>')
 		self.download_demo.setOpenExternalLinks(True)
 		self.download_demo.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 		layout_about.addWidget(self.download_demo)
@@ -129,6 +129,7 @@ class MainWindow(QWidget):
 
 		self.update_total_questions_sum()
 		self.update_tree_sections()
+		self.selected_sectionids_in_ExportBox = []
 		self.update_sections_in_ExportBox(self.selected_sectionids_in_ExportBox)
 		self.update_combo_users()
 
@@ -239,7 +240,6 @@ class MainWindow(QWidget):
 		self.createExportOptionsBox()
 		layout.addWidget(self.ExportOptionsBox)
 		self.tab_export_by_section.setLayout(layout)
-		self.selected_sectionids_in_ExportBox = []
 
 	def tab_export_by_questionUI(self):
 		layout = QVBoxLayout()
@@ -871,10 +871,10 @@ class MainWindow(QWidget):
 		if self.list_type_of_question_in_ModifyBox.currentText() == '单选题':
 			self.add_schoice_ui = AddSingleChoice(self.mydb)
 			self.add_schoice_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
-			self.add_schoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
-			self.add_schoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			self.add_schoice_ui.input_answerA.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[1]))
+			self.add_schoice_ui.input_answerB.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[2]))
+			self.add_schoice_ui.input_answerC.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[3]))
+			self.add_schoice_ui.input_answerD.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[4]))
 			if self.question_data_in_ModifyBox[5] == 'A':
 				self.add_schoice_ui.btn_A.setChecked(True)
 				self.add_schoice_ui.clickA()
@@ -909,10 +909,10 @@ class MainWindow(QWidget):
 		if self.list_type_of_question_in_ModifyBox.currentText() == '多选题':
 			self.add_mchoice_ui = AddMultipleChoice(self.mydb)
 			self.add_mchoice_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
-			self.add_mchoice_ui.input_answerA.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerB.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerC.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
-			self.add_mchoice_ui.input_answerD.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			self.add_mchoice_ui.input_answerA.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[1]))
+			self.add_mchoice_ui.input_answerB.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[2]))
+			self.add_mchoice_ui.input_answerC.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[3]))
+			self.add_mchoice_ui.input_answerD.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[4]))
 			self.add_mchoice_ui.btn_A.setCurrentIndex(self.question_data_in_ModifyBox[5])
 			self.add_mchoice_ui.btn_B.setCurrentIndex(self.question_data_in_ModifyBox[6])
 			self.add_mchoice_ui.btn_C.setCurrentIndex(self.question_data_in_ModifyBox[7])
@@ -939,7 +939,7 @@ class MainWindow(QWidget):
 		if self.list_type_of_question_in_ModifyBox.currentText() == '判断题':
 			self.add_tof_ui = AddToF(self.mydb)
 			self.add_tof_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
-			self.add_tof_ui.list_answer.setCurrentIndex(self.question_data_in_ModifyBox[1])
+			self.add_tof_ui.list_answer.setCurrentIndex(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[1]))
 			self.add_tof_ui.input_explain.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[2]))
 			i = 0
 			while self.question_data_in_ModifyBox[3] != self.sections[i][0]:
@@ -962,10 +962,10 @@ class MainWindow(QWidget):
 		if self.list_type_of_question_in_ModifyBox.currentText() == '填空题':
 			self.add_blank_ui = AddFillinBlanks(self.mydb)
 			self.add_blank_ui.input_question.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[0]))
-			self.add_blank_ui.input_answer1.setPlainText(self.question_data_in_ModifyBox[1].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer2.setPlainText(self.question_data_in_ModifyBox[2].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer3.setPlainText(self.question_data_in_ModifyBox[3].replace('\\\\\n','\n'))
-			self.add_blank_ui.input_answer4.setPlainText(self.question_data_in_ModifyBox[4].replace('\\\\\n','\n'))
+			self.add_blank_ui.input_answer1.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[1]))
+			self.add_blank_ui.input_answer2.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[2]))
+			self.add_blank_ui.input_answer3.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[3]))
+			self.add_blank_ui.input_answer4.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[4]))
 			self.add_blank_ui.input_explain.setPlainText(myfun.transform_latex_to_plaintext(self.question_data_in_ModifyBox[5]))
 			i = 0
 			while self.question_data_in_ModifyBox[6] != self.sections[i][0]:
@@ -1597,6 +1597,8 @@ class MainWindow(QWidget):
 		self.update_selectedNum()
 
 	def chk_solution_clicked(self):
+		if not self.chk_solution.isChecked():
+			self.chk_follow.setChecked(False)
 		self.chk_follow.setEnabled(self.chk_solution.isChecked())
 		self.setoptions()
 

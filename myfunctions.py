@@ -167,11 +167,25 @@ def gethtml(width, contents=''):
     return pageSourceHead1 + str(width-5) + pageSourceHead2 + contents + pageSourceFoot
 
 def transform_latex_to_plaintext(question): # 从数据库latex转换为窗口输入的文字
-    math, nonmath = separate_math_and_nonmath(question.strip())
-    # 删除非数学环境中的换行\\
-    text = nonmath[0].replace('\\\\\n', '\n')
-    for i in range(len(math)):
-        text += (math[i] + nonmath[i+1].replace('\\\\\n', '\n'))
+    # math, nonmath = separate_math_and_nonmath(question.strip())
+    # # 删除非数学环境中的换行\\
+    # text = nonmath[0].replace('\\\\\n', '\n')
+    # for i in range(len(math)):
+    #     text += (math[i] + nonmath[i+1].replace('\\\\\n', '\n'))
+    # 将 latex 环境以外的 \\+回车 改为 回车
+    # mathenv1 = ['$$', '$', '\\(', '\\[', '\\begin{']
+    # mathenv2 = ['$$', '$', '\\)', '\\]', '\\end{']
+    mathenv1_regex = ['\\$\\$', '\\$', '\\\\\\(', '\\\\\\[', '\\\\begin\{']
+    mathenv2_regex = ['\\$\\$', '\\$', '\\\\\\)', '\\\\\\]', '\\\\end\{']
+    text = question.strip()
+    pattern = '(?>' + mathenv1_regex[0] + '(?>.|\\n)*?' + mathenv2_regex[0] + ')'
+    for i in range(1, len(mathenv1_regex)):
+        pattern += ('|' + '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')')
+    text_splited = regex.split(pattern, text)
+    keepstring = regex.findall(pattern, text)
+    text = text_splited[0].replace('\\\\\n', '\n')
+    for i in range(len(keepstring)):
+        text += (keepstring[i] + text_splited[i+1].replace('\\\\\n', '\n'))
     # 转换子问题编号
     text = text.replace('\t\t\\begin{enumerate}[(1)]\n', '')
     text = text.replace('\\begin{enumerate}[(1)]\n', '')
@@ -215,11 +229,53 @@ def format_question_to_html(question, question_type, fromdatabase = 0): # 将题
 #     return newtext
 
 def format_latexenv_to_html(text):
-    env = ['tabular', 'tikzpicture', 'minipage']
+    env = ['tikzpicture']
     newtext = text.strip()
     for i in range(len(env)):
-        pattern = '(?>\\\\begin\{(' + env[i] + ')\}(?>.|\\n)*?\\end\{' + env[i] + '\})'
+        pattern = r'(?>\\begin\{(' + env[i] + ')\}(?>.|\n)*?\\end\{' + env[i] + '\})'
         newtext , _ = regex.subn(pattern, r'<p style="color:red; margin: 0 auto; text-align: center;"> !!\1 环境不能转化为 Html 格式，请导出为 $\LaTeX$ 格式文档并编译查看!!</p>', newtext)
+    # 删除 minipage 环境的开头和结尾
+    pattern = r'(?>\\begin\{minipage\}(\[.*?\]|)\{.*?\}(\n|))'
+    newtext , _ = regex.subn(pattern, '', newtext)
+    pattern = r'(?>\\end{minipage}(\n|))'
+    newtext , _ = regex.subn(pattern, '', newtext)
+    # 删除 \vspace{}
+    pattern = r'(?>\\vspace\{.*?\})'
+    newtext , _ = regex.subn(pattern, '', newtext)
+    # tabular 环境
+    mathenv_left = ['\\$\\$', '\\$', '\\\\\\(', '\\\\\\[', '\\\\begin\{equation\}']
+    mathenv_right = ['\\$\\$', '\\$', '\\\\\\)', '\\\\\\]', '\\\\end\{equation\}']
+    pattern = r'(?>\\begin\{tabular}\{.*?\}(?>.|\n)*?\\end\{tabular\})'
+    nontabular = regex.split(pattern, newtext)
+    tabular = regex.findall(pattern, newtext)
+    pattern = r'(?>\\begin\{tabular}(\{.*?\})(?>.|\n)*?\\end\{tabular\})'
+    if tabular:
+        tabular[0] = tabular[0].replace(r'\hline','')
+        columntype = regex.match(pattern, tabular[0]).groups()[0]
+        num_columns = columntype.count('c') + columntype.count('p') + columntype.count('l') + columntype.count('r')
+        if num_columns == 1:
+            num_rows = tabular[0].count('&')-tabular[0].count('\&')
+        else:
+            num_rows = int((tabular[0].count('&')-tabular[0].count('\&'))/(num_columns-1))
+        pattern = r'(?>(?<!\\)&|\\\\)'
+        cells = regex.split(pattern, tabular[0])
+        pattern = r'(?>\\begin\{tabular}\{.*?\})'
+        cells[0], _ = regex.subn(pattern, '', cells[0])
+        htmltable = '<table style="border:1px solid;border-collapse: collapse; padding:2px;text-align: center;">'
+        for i in range(num_rows):
+            htmltable += '<tr sytle="border:1px solid">'
+            for j in range(num_columns):
+                htmltable += f'<td style="border:1px solid">{cells[i*num_columns+j].strip()}</td>'
+            htmltable += '</tr>'
+        htmltable += '</table>'
+        tabular[0] = htmltable
+        # print(cells)
+        # print(len(cells))
+        # if not columntype:
+        #     print(columntype.groups())
+    newtext = nontabular[0]
+    for i in range(len(tabular)):
+        newtext += (tabular[i] + nontabular[i+1])
     return newtext
 
 def format_lessthan_to_html(text):
@@ -242,9 +298,9 @@ def format_subquestion_to_html(question, fromdatabase = 0): # 格式化字符串
     text = question.strip()
     if fromdatabase == 1:
         text = transform_latex_to_plaintext(text)
-    text = format_enter_to_html(text)
     text = format_lessthan_to_html(text)
     text = format_latexenv_to_html(text)
+    text = format_enter_to_html(text)
     text , _ = regex.subn(r'(?>\\subq)+', r'\subq', text) # 连续出现多个\subq的话，替换为1个
     num = text.count(r'\subq')
     if num == 0:
@@ -336,10 +392,10 @@ def format_subquestion_to_latex(question): # 格式化字符串中的子问题
         return text
     splited = text.split(r'\subq')
     splited[-1]=splited[-1].strip()
-    if splited[-1].find('\\\\\n') == -1: # 如果最后一段没有回车，则在末尾添加所需字符
+    if splited[-1].find('\n\n') == -1: # 如果最后一段没有两个连续回车，则在末尾添加所需字符
         splited[-1] += ('\n\t\t\\end{enumerate}')
-    else: # 如果最后一段有回车，则将第1个回车替换为所需字符
-        splited[-1] = splited[-1].replace('\\\\\n','\\\\\n\t\t\\end{enumerate}\n\t\t', 1)
+    else: # 如果最后一段有回车，则将第1个非数学环境的回车替换为所需字符
+        splited[-1] = splited[-1].replace('\n\n','\n\t\t\\end{enumerate}\n\t\t', 1)
     splited[-1] = '\t\t\t\\item ' + splited[-1]
     for i in range(len(splited)-2, 0, -1):
         splited[i] = splited[i].strip()
@@ -427,7 +483,10 @@ def export_to_latex(mydb, schoiceid,mchoiceid,tofid,blankid,calculationid,proofi
 
     try:
         filename = ('questions[%s]' % datetime.now().strftime('%Y-%m-%dT%H-%M-%S'))
-        filepath = ('%s/exports/%s.tex' % (QDir.currentPath(), filename))
+        filedir = f'{QDir.currentPath()}/exports'
+        if not os.path.exists(filedir):
+            os.mkdir(filedir)
+        filepath = f'{filedir}/{filename}.tex'
         f = open(filepath, 'w', encoding='utf-8')
         f.writelines(latex.docclass)
         if (not options['follow']) and (options['white']):
@@ -764,8 +823,15 @@ def export_to_html(mydb,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,
 
     try:
         filename = ('questions[%s]' % datetime.now().strftime('%Y-%m-%dT%H-%M-%S'))
-        filepath = ('%s/exports/%s.html' % (QDir.currentPath(), filename))
+        filedir = f'{QDir.currentPath()}/exports'
+        if not os.path.exists(filedir):
+            os.mkdir(filedir)
+        filepath = f'{filedir}/{filename}.html'
         pageSourceContent, schoice_choiceseq_new, mchoice_choiceseq_new = generate_html_body(mydb,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq,mchoice_choiceseq)
+        # 删除!!警告信息!!
+        pattern = r'(?>!!(.|\n)*?!!)'
+        pageSourceContent,_ = regex.subn(pattern, '', pageSourceContent)
+        # 生成 html
         html_source = gethtml(100, pageSourceContent)
         html_source = regex.sub(
             r'<script type="text\/javascript" id="MathJax-script" async src=".*"><\/script>',
