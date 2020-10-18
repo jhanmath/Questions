@@ -30,7 +30,7 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.09.28'
+		self.ver = '2020.10.13'
 		self.options = {'solution': True,
 						'random': True,
 						'randomchoice': False,
@@ -74,7 +74,7 @@ class MainWindow(QWidget):
 		self.download_demo.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
 		layout_about.addWidget(self.download_demo)
 		self.about = QLabel(
-			'This software is developed by Jing Han. ver %s.' % (self.ver))
+			f'This software is developed by Jing Han. ver. {self.ver}')
 		self.about.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 		layout_about.addWidget(self.about)
 		mainlayout.addLayout(layout_about)
@@ -171,7 +171,10 @@ class MainWindow(QWidget):
 			self.mydb.build_structure()
 			insertstring = f'INSERT INTO dbname ("name") VALUES ("{text.strip()}");'
 			self.mydb.insert(insertstring)
-			insertstring = f'INSERT INTO users ("name") VALUES ("{self.combo_user.currentText()}");'
+			if self.combo_user.currentText() == '':
+				insertstring = f'INSERT INTO users ("name") VALUES ("无名氏");'
+			else:
+				insertstring = f'INSERT INTO users ("name") VALUES ("{self.combo_user.currentText()}");'
 			self.mydb.insert(insertstring)
 			insertstring = f'INSERT INTO difficulties ("difficulty") VALUES ("未知");'
 			self.mydb.insert(insertstring)
@@ -688,11 +691,11 @@ class MainWindow(QWidget):
 		layout_options.setHorizontalSpacing(10)
 
 		layout_btn = QHBoxLayout()
-		self.btn_export_to_latex = QPushButton('导出LaTeX')
+		self.btn_export_to_latex = QPushButton('导出 LaTeX')
 		self.btn_export_to_latex.clicked.connect(self.export_questions_to_latex)
 		self.btn_switch = QPushButton('切换至自由选题')
 		self.btn_switch.clicked.connect(self.btn_switch_clicked)
-		self.btn_export_to_html = QPushButton('导出Html')
+		self.btn_export_to_html = QPushButton('导出 HTML')
 		self.btn_export_to_html.clicked.connect(self.export_questions_to_html)
 		layout_btn.addWidget(self.btn_export_to_latex)
 		layout_btn.addWidget(self.btn_switch)
@@ -1051,7 +1054,7 @@ class MainWindow(QWidget):
 				self.questionids_in_ModifyBox.remove(self.questionid_in_ModifyBox)
 				if len(self.questionids_in_ModifyBox) == 0:
 					self.questionid_in_ModifyBox = 0 # 如果删除后当前题目列表为空，则问题id清0
-				elif index == len(self.questionids_in_ModifyBox):
+				elif index == len(self.questionids_in_ModifyBox): # 如果删除的是当前题目列表中最后一个，则设置问题 id 为删除后列表中最后一个
 					self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index - 1]
 				else:
 					self.questionid_in_ModifyBox = self.questionids_in_ModifyBox[index]
@@ -2141,13 +2144,13 @@ class MainWindow(QWidget):
 		ui.list_section.setCurrentIndex(i)
 		i = 0
 		for j in range(len(self.difficulties)):
-			if self.last_added_difficulty_id == self.difficulties[i][0]:
+			if self.last_added_difficulty_id == self.difficulties[j][0]:
 				i = j
 				break
 		ui.list_difficulty.setCurrentIndex(i)
 		i = 0
 		for j in range(len(self.sources)):
-			if self.last_added_source_id != self.sources[i][0]:
+			if self.last_added_source_id == self.sources[j][0]:
 				i = j
 				break
 		ui.current_userid = self.current_userid

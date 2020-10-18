@@ -112,11 +112,11 @@ class PreviewQuestions(QWidget):
         layout_options.setHorizontalSpacing(10)
 
         layout_btn = QHBoxLayout()
-        self.btn_export_to_latex = QPushButton('导出LaTeX')
+        self.btn_export_to_latex = QPushButton('导出 LaTeX')
         self.btn_export_to_latex.clicked.connect(self.export_questions_to_latex)
         self.btn_compile = QPushButton('导出并编译')
         self.btn_compile.setEnabled(False)
-        self.btn_export_to_html = QPushButton('导出Html')
+        self.btn_export_to_html = QPushButton('导出 HTML')
         self.btn_export_to_html.clicked.connect(self.export_questions_to_html)
         layout_btn.addWidget(self.btn_export_to_latex)
         layout_btn.addWidget(self.btn_compile)

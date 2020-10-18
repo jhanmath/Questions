@@ -126,7 +126,7 @@ class DataBase:
                             "B"	TEXT NOT NULL,
                             "C"	TEXT,
                             "D"	TEXT,
-                            "answer"	TEXT NOT NULL CHECK("answer" IN ('A', 'B', 'C', 'D')),
+                            "answer"	TEXT NOT NULL,
                             "explain"	TEXT,
                             "section"	INTEGER NOT NULL DEFAULT 1,
                             "difficulty"	INTEGER NOT NULL DEFAULT 1,
