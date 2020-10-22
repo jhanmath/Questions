@@ -377,11 +377,13 @@ def format_blank_to_html(question, question_type): # 格式化字符串中的空
 
 def format_question_to_latex(question, question_type): # 将题干转化为latex
     newtext = format_blank_to_latex(question, question_type)
+    newtext = format_enter_to_latex(newtext)
     newtext = format_subquestion_to_latex(newtext)
     return newtext
 
 def format_explain_to_latex(text):
-    newtext = format_subquestion_to_latex(text)
+    newtext = format_enter_to_latex(text)
+    newtext = format_subquestion_to_latex(newtext)
     return newtext
 
 def format_subquestion_to_latex(question): # 格式化字符串中的子问题
@@ -444,22 +446,22 @@ def format_blank_to_latex(question, question_type): # 格式化字符串中的�
     return newtext
 
 def format_enter_to_latex(text): # 将latex环境以外的回车改为\\+回车
-    mathenv1 = ['$$', '$', '\\(', '\\[', '\\begin{']
-    mathenv2 = ['$$', '$', '\\)', '\\]', '\\end{']
-    mathenv1_regex = ['\\$\\$', '\\$', '\\\\\\(', '\\\\\\[', '\\\\begin\{']
-    mathenv2_regex = ['\\$\\$', '\\$', '\\\\\\)', '\\\\\\]', '\\\\end\{']
+    mathenv1 = ['$', '\\(', '$$', '\\[', '\\begin{']
+    mathenv2 = ['$', '\\)', '$$', '\\]', '\\end{']
+    mathenv1_regex = ['\\$', '\\\\\\(', '\\$\\$', '\\\\\\[', '\\\\begin\{']
+    mathenv2_regex = ['\\$', '\\\\\\)', '\\$\\$', '\\\\\\]', '\\\\end\{']
     origin_text = text.strip()
     pattern = '(?>' + mathenv1_regex[0] + '(?>.|\\n)*?' + mathenv2_regex[0] + ')'
     for i in range(1, len(mathenv1_regex)):
         pattern += ('|' + '(?>' + mathenv1_regex[i] + '(?>.|\\n)*?' + mathenv2_regex[i] + ')')
-    text_splited = regex.split(pattern, origin_text)
-    keepstring = regex.findall(pattern, origin_text)
+    text_splited = regex.split(pattern, origin_text)  # 非数学环境
+    keepstring = regex.findall(pattern, origin_text) # 数学环境
     newtext = text_splited[0].replace('\n', '\\\\\n')
     for i in range(len(keepstring)):
         newtext += (keepstring[i] + text_splited[i+1].replace('\n', '\\\\\n'))
-    for i in range(len(mathenv1)): # 将环境开头前和结尾后的\\删除
-        newtext = newtext.replace('\\\\'+mathenv1[i], mathenv1[i])
-        newtext = newtext.replace(mathenv2[i]+'\\\\', mathenv2[i])
+    # for i in range(2,len(mathenv1)): # 将显示数学环境开头前和结尾后的\\删除
+    #     newtext = newtext.replace('\\\\'+mathenv1[i], mathenv1[i])
+    #     newtext = newtext.replace(mathenv2[i]+'\\\\', mathenv2[i])
     newtext, _ = regex.subn(r'(\\end\{.*?\})\\\\', r'\1', newtext)
     return newtext
 

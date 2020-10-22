@@ -30,7 +30,7 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.10.13'
+		self.ver = '2020.10.22'
 		self.options = {'solution': True,
 						'random': True,
 						'randomchoice': False,

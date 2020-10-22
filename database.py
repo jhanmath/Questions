@@ -120,13 +120,13 @@ class DataBase:
                         )'''
         self.insert(createstring)
         createstring = '''CREATE TABLE "schoice" (
-                            "id"	INTEGER NOT NULL UNIQUE,
+                            "id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
                             "question"	TEXT NOT NULL,
                             "A"	TEXT NOT NULL,
                             "B"	TEXT NOT NULL,
                             "C"	TEXT,
                             "D"	TEXT,
-                            "answer"	TEXT NOT NULL,
+                            "answer"	TEXT NOT NULL CHECK(answer='A' or answer='B' or answer='C' or answer='D'),
                             "explain"	TEXT,
                             "section"	INTEGER NOT NULL DEFAULT 1,
                             "difficulty"	INTEGER NOT NULL DEFAULT 1,
@@ -135,11 +135,10 @@ class DataBase:
                             "inputdate"	TEXT NOT NULL,
                             "modifyuser"	INTEGER,
                             "modifydate"	TEXT,
-                            PRIMARY KEY("id" AUTOINCREMENT),
                             FOREIGN KEY("difficulty") REFERENCES "difficulties"("id"),
-                            FOREIGN KEY("section") REFERENCES "sections"("id"),
                             FOREIGN KEY("source") REFERENCES "sources"("id"),
-                            FOREIGN KEY("inputuser") REFERENCES "users"("id")
+                            FOREIGN KEY("inputuser") REFERENCES "users"("id"),
+                            FOREIGN KEY("section") REFERENCES "sections"("id")
                         )'''
         self.insert(createstring)
         createstring = '''CREATE TABLE "mchoice" (
