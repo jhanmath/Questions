@@ -4,6 +4,7 @@ __pycache__/
 dist/
 build/
 exports/
-db/
+db/advanced_math.db
+db/linear_algebra.db
 questions.spec
 questions.exe
