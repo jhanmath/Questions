@@ -8,7 +8,8 @@
             "name": "Python: Start questions.py",
             "type": "python",
             "request": "launch",
-            "program": "D:\\OneDrive\\git\\Python\\Questions\\questions.py",
+            //"program": "D:\\OneDrive\\git\\Python\\Questions\\questions.py",
+            "program": "/Users/jinghan/OneDrive/git/Python/Questions/questions.py",
             "console": "integratedTerminal"
         }
     ]

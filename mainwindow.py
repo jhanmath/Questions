@@ -167,6 +167,7 @@ class MainWindow(QWidget):
 				return
 			if os.path.exists(dbpath):
 				os.remove(dbpath)
+			print('yes')
 			self.mydb = DataBase(dbpath)
 			self.mydb.build_structure()
 			insertstring = f'INSERT INTO dbname ("name") VALUES ("{text.strip()}");'

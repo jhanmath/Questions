@@ -107,7 +107,7 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
             questionstring += '<p>'
             if output_type == 2:
                 questionstring += format_number
-            questionstring += ('解： ' + format_subquestion_to_html(question[1], fromdatabase) + '</p>')
+            questionstring += ('<b>解</b> ' + format_subquestion_to_html(question[1], fromdatabase) + '</p>')
     elif question_type == '证明题':
         questionstring = ''
         if output_type == 0 or output_type == 1:
@@ -116,7 +116,7 @@ def format_questiondata_to_html(question, question_type, number='', fromdatabase
             questionstring += '<p>'
             if output_type == 2:
                 questionstring += format_number
-            questionstring += ('证明： ' + format_subquestion_to_html(question[1], fromdatabase) + '</p>')
+            questionstring += ('<b>证明</b> ' + format_subquestion_to_html(question[1], fromdatabase) + '</p>')
     return questionstring
 
 
@@ -795,18 +795,18 @@ def write_calculation_question(f, calculation):
 
 def write_calculation_soltuion(f, calculation):
     if calculation[1] == '':
-        f.writelines('解：略\n')
+        f.writelines('\\textbf{解 } 略\n')
     else:
-        f.writelines('解：%s\n' % (calculation[1]))
+        f.writelines('\\textbf{解 } %s\n' % (calculation[1]))
 
 def write_proof_question(f, proof):
     f.writelines('%s' % (proof[0]))
 
 def write_proof_soltuion(f, proof):
     if proof[1] != '':
-        f.writelines('证明：%s\n' % (proof[1]))
+        f.writelines('\\textbf{证明 } %s\n' % (proof[1]))
     else:
-        f.writelines('证明：略\n')
+        f.writelines('\\textbf{证明 } 略\n')
 
 def export_to_html(mydb,schoiceid,mchoiceid,tofid,blankid,calculationid,proofid,options,schoice_choiceseq=[],mchoice_choiceseq=[]):
     if options['random']:
