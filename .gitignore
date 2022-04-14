@@ -4,6 +4,6 @@ __pycache__/
 dist/
 build/
 exports/
-db/database.db
+db/
 questions.spec
 questions.exe
