@@ -65,7 +65,7 @@
 
 ### Required Python packages
 - webbrowser, requests, os, regex, random, datetime
-- PyQt5, PyQtWebEngine
+- PyQt5(MacOS上需要`brew install qt5`和`pip install PyQt5 --config-settings --confirm-license= --verbose`), PyQtWebEngine
 
 ### 使用方法
 

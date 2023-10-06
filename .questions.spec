@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['.questions.py'],
-             pathex=['/Users/jinghan/OneDrive/git/Python/Questions'],
+             pathex=['/Users/hanjing/Documents/GitHub/Questions'],
              binaries=[],
              datas=[],
              hiddenimports=[],
