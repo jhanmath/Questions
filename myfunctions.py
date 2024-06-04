@@ -417,7 +417,7 @@ def format_subquestion_to_latex(question): # 格式化字符串中的子问题
 def format_blank_to_latex(question, question_type): # 格式化字符串中的空括号和空填空
     text = question.strip()
     if question_type == '单选题' or question_type == '多选题':
-        delimiter = r'"\emptychoice"'
+        delimiter = r'"\\emptychoice"'
         pattern = r'(\\emptychoice)([^ ])'
         text_splited = regex.split(delimiter, question)
         keepstring = regex.findall(delimiter, question)
