@@ -232,8 +232,8 @@ def format_latexenv_to_html(text):
     env = ['tikzpicture']
     newtext = text.strip()
     for i in range(len(env)):
-        pattern = r'(?>\\begin\{(' + env[i] + ')\}(?>.|\n)*?\\end\{' + env[i] + '\})'
-        newtext , _ = regex.subn(pattern, r'<p style="color:red; margin: 0 auto; text-align: center;"> !!\1 环境不能转化为 Html 格式，请导出为 $\LaTeX$ 格式文档并编译查看!!</p>', newtext)
+        pattern = regex.compile(r'(?>\\\\begin\{(' + env[i] + ')\}(?>.|\\n)*?\\\\end\{' + env[i] + '\})')
+        newtext , _ = regex.subn(pattern, r'<p style="color:red; margin: 0 auto; text-align: center;"> !!\1 环境不能转化为 Html 格式，请导出为 $\\LaTeX$ 格式文档并编译查看!!</p>', newtext)
     # 删除 minipage 环境的开头和结尾
     pattern = r'(?>\\begin\{minipage\}(\[.*?\]|)\{.*?\}(\n|))'
     newtext , _ = regex.subn(pattern, '', newtext)
@@ -301,7 +301,7 @@ def format_subquestion_to_html(question, fromdatabase = 0): # 格式化字符串
     text = format_lessthan_to_html(text)
     text = format_latexenv_to_html(text)
     text = format_enter_to_html(text)
-    text , _ = regex.subn(r'(?>\\subq)+', r'\subq', text) # 连续出现多个\subq的话，替换为1个
+    text , _ = regex.subn(r'(?>\\subq)+', r'\\subq', text) # 连续出现多个\subq的话，替换为1个
     num = text.count(r'\subq')
     if num == 0:
         return text
@@ -388,7 +388,7 @@ def format_explain_to_latex(text):
 
 def format_subquestion_to_latex(question): # 格式化字符串中的子问题
     text = question.strip()
-    text , _ = regex.subn(r'(?>\\subq)+', r'\subq', text) # 连续出现多个\subq的话，替换为1个
+    text , _ = regex.subn(r'(?>\\subq)+', r'\\subq', text) # 连续出现多个\subq的话，替换为1个
     num = text.count(r'\subq')
     if num == 0:
         return text
