@@ -4,9 +4,8 @@ __pycache__/
 dist/
 build/
 exports/
-db/advanced_math.db
-db/linear_algebra.db
 questions.spec
 questions.exe
 .DS_Store
 *.spec
+.venv/
