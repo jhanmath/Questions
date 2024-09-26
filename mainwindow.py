@@ -30,7 +30,7 @@ class MainWindow(QWidget):
 
 	def __init__(self, parent=None):
 		super(MainWindow , self).__init__(parent)
-		self.ver = '2020.10.22'
+		self.ver = '2024.8.22'
 		self.options = {'solution': True,
 						'random': True,
 						'randomchoice': False,
@@ -80,7 +80,7 @@ class MainWindow(QWidget):
 		mainlayout.addLayout(layout_about)
 		self.setLayout(mainlayout)
 		self.resize(1000, 700)
-		self.setWindowTitle("数学题库")
+		self.setWindowTitle("数学智汇库")
 
 		self.btn_addschoice.setEnabled(False)
 		self.btn_addmchoice.setEnabled(False)
@@ -1709,31 +1709,37 @@ class MainWindow(QWidget):
 		searchstring = ('select count(*) from schoice')
 		num_schoice = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_schoice))
+		# newItem = QTableWidgetItem(str(540))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 0, newItem)
 		searchstring = ('select count(*) from mchoice')
 		num_mchoice = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_mchoice))
+		# newItem = QTableWidgetItem(str(230))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 1, newItem)
 		searchstring = ('select count(*) from tof')
 		num_tof = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_tof))
+		# newItem = QTableWidgetItem(str(486))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 2, newItem)
 		searchstring = ('select count(*) from blank')
 		num_blank = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_blank))
+		# newItem = QTableWidgetItem(str(896))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 3, newItem)
 		searchstring = ('select count(*) from calculation')
 		num_calculation = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_calculation))
+		# newItem = QTableWidgetItem(str(434))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 4, newItem)
 		searchstring = ('select count(*) from proof')
 		num_proof = self.mydb.search(searchstring)[0][0]
 		newItem = QTableWidgetItem(str(num_proof))
+		# newItem = QTableWidgetItem(str(96))
 		newItem.setTextAlignment(Qt.AlignHCenter)
 		self.tbl_total_questions_num.setItem(0, 5, newItem)
 
